@@ -1,0 +1,6 @@
+data
+node_modules
+.idea
+*.configuration.json
+.env
+.DS_Store
