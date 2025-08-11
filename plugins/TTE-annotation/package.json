@@ -1,0 +1,19 @@
+{
+  "name": "glycerine",
+  "version": "1.0.0",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "build": "wp-scripts build src/glycerine-text-annotation.js",
+    "start": "wp-scripts start src/glycerine-text-annotation.js"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^25.5.1"
+  },
+  "description": "",
+  "dependencies": {
+    "glycerine-viewer": "^1.4.0"
+  }
+}
