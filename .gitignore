@@ -4,3 +4,4 @@ node_modules
 *.configuration.json
 .env
 .DS_Store
+.htaccess

@@ -19,7 +19,10 @@ jQuery(document).ready(function ($) {
         });
     });
 
+    let isSearchOn = false;
+    let filteredCanvasIDs = [];
     const filteredAnnotationIDs = new Set();
+    let currentActiveCanvasID = null;
 
     // Initialize glycerine viewer
     const ele = document.getElementById("glycerine-text-annotation-viewer");
@@ -49,12 +52,14 @@ jQuery(document).ready(function ($) {
             });
         },
         onOsdInitialized: () => {
+            console.log("OSD Initialized");
             // Hide all rows first
             allRows.forEach((row) => {
                 row.style.display = "none";
             });
         },
         onCanvasAnnotationsLoaded: (data) => {
+            console.log("Canvas Annotations Loaded");
             clearHighlightedAnnotations();
 
             data.forEach((annotation) => {
@@ -71,7 +76,12 @@ jQuery(document).ready(function ($) {
 
             setTimeout(() => {
                 highLightMatchedAnnotation(data.map((anno) => anno.id));
-            }, 600);
+            }, 750);
+        },
+        onCanvasLoaded: (data) => {
+            console.log("Canvas Loaded");
+            currentActiveCanvasID = data;
+            updateSearchNavigations();
         },
     });
 
@@ -90,6 +100,73 @@ jQuery(document).ready(function ($) {
             viewer.clearHighlight();
         });
     });
+
+    function updateSearchNavigations() {
+        const navContainer = document.getElementById("search-navigation");
+        const navText = document.getElementById("search-navigation-label");
+        const prevBtn = document.getElementById("search-navigation-prev");
+        const nextBtn = document.getElementById("search-navigation-next");
+
+        if (!isSearchOn) {
+            // Destroy events by replacing elements
+            prevBtn.replaceWith(prevBtn.cloneNode(true));
+            nextBtn.replaceWith(nextBtn.cloneNode(true));
+
+            navText.textContent = "";
+            navContainer.style.display = "none";
+            return;
+        }
+
+        navContainer.style.display = "flex";
+
+        // Clear old events
+        prevBtn.replaceWith(prevBtn.cloneNode(true));
+        nextBtn.replaceWith(nextBtn.cloneNode(true));
+
+        const newPrevBtn = document.getElementById("search-navigation-prev");
+        const newNextBtn = document.getElementById("search-navigation-next");
+
+        // No results
+        if (filteredCanvasIDs.length === 0) {
+            navText.textContent = "No results";
+            return;
+        }
+
+        // Find current index
+        let currentCanvasIndex = filteredCanvasIDs.indexOf(
+            currentActiveCanvasID
+        );
+        if (currentCanvasIndex === -1) {
+            currentCanvasIndex = 0;
+        }
+        navText.textContent = `(${currentCanvasIndex + 1} / ${
+            filteredCanvasIDs.length
+        } results)`;
+
+        const preFilteredCanvasID =
+            currentCanvasIndex > 0
+                ? filteredCanvasIDs[currentCanvasIndex - 1]
+                : null;
+
+        const nextFilteredCanvasID =
+            currentCanvasIndex < filteredCanvasIDs.length - 1
+                ? filteredCanvasIDs[currentCanvasIndex + 1]
+                : null;
+
+        // Prev click
+        newPrevBtn.addEventListener("click", () => {
+            if (preFilteredCanvasID) {
+                viewer.activateCanvas(preFilteredCanvasID);
+            }
+        });
+
+        // Next click
+        newNextBtn.addEventListener("click", () => {
+            if (nextFilteredCanvasID) {
+                viewer.activateCanvas(nextFilteredCanvasID);
+            }
+        });
+    }
 
     function highLightMatchedAnnotation(annotationIds) {
         annotationIds.forEach((annotationId) => {
@@ -125,6 +202,9 @@ jQuery(document).ready(function ($) {
         let activeFilters = {};
 
         filteredAnnotationIDs.clear();
+        filteredCanvasIDs = [];
+        isSearchOn = searchQuery !== "";
+
         clearHighlightedAnnotations();
         // Collect active filters
         filterDropdowns.forEach((select) => {
@@ -142,6 +222,7 @@ jQuery(document).ready(function ($) {
             let filterMatch = true;
 
             let annotationId = row.querySelector("input.annotation-id")?.value;
+            let canvasId = row.querySelector("input.canvas-id")?.value;
 
             // Reset row and cell highlights
             row.classList.remove("match-row");
@@ -222,11 +303,34 @@ jQuery(document).ready(function ($) {
             const shouldHighlight = textMatch && filterMatch;
             if (shouldHighlight) {
                 filteredAnnotationIDs.add(annotationId);
+                filteredCanvasIDs.push(canvasId);
                 row.classList.add("match-row");
             }
         });
 
+        if (searchQuery == "" && Object.keys(activeFilters).length == 0) {
+            isSearchOn = false;
+        }
+
+        // Go to the first search result
+        if (filteredCanvasIDs.length > 0) {
+            viewer.activateCanvas(filteredCanvasIDs[0]);
+            allRows.forEach((row) => {
+                row.style.display = "none";
+            });
+
+            const row = document
+                .querySelector(
+                    `#annotation-table-body tr input.annotation-id[value="${filteredAnnotationIDs.values().next().value}"]`
+                )
+                ?.closest("tr");
+            if (row) {
+                row.style.display = "block";
+            }
+        }
+
         highLightMatchedAnnotation(Array.from(filteredAnnotationIDs));
+        updateSearchNavigations();
     }
     // Search event
     searchInput.addEventListener("keypress", function (event) {
@@ -275,7 +379,7 @@ jQuery(document).ready(function ($) {
                 .find("span")
                 .removeClass("icon-arrow-right-dark")
                 .addClass("icon-arrow-left-dark");
-            $viewerBtn.find("p").html("");
+            $viewerBtn.find("p").html("Hide Viewer");
 
             // Show table button
             $tableBtn.show();
@@ -311,7 +415,7 @@ jQuery(document).ready(function ($) {
                 .find("span")
                 .removeClass("icon-arrow-left-dark")
                 .addClass("icon-arrow-right-dark");
-            $tableBtn.find("p").html("");
+            $tableBtn.find("p").html("Hide Table");
 
             // Show view button
             $viewerBtn.show();
