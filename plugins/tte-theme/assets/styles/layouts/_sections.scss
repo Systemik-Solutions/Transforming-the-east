@@ -1,0 +1,25 @@
+/**
+ * Sections
+ *
+ */
+
+.section-contacts {
+    position: relative;
+    font-size: 1.125rem; /* 18/16 */
+    padding-top: 2rem;
+    margin-bottom: 3rem;
+
+    &:before {
+        content: "";
+        width: 3.125rem; /* 50/16 */
+        height: 0.125rem; /* 2/16 */
+        background-color: #000;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    .fa-phone {
+        transform: rotateZ(-90deg);
+    }
+}

@@ -1,0 +1,17 @@
+/**
+ * Transition
+ *
+ */
+
+a, 
+button, 
+input, 
+textarea {
+    transition: background-color .2s ease-out, 
+                background-image .2s ease-out, 
+                border-color .2s ease-out, 
+                box-shadow .2s ease-out, 
+                color .2s ease-out, 
+                opacity .2s ease-out, 
+                text-shadow .2s ease-out;
+}

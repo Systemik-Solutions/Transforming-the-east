@@ -1,0 +1,85 @@
+/**
+ * Forms
+ *
+ */
+
+// search form
+.search-form {
+    @extend .form-inline;
+
+    .navbar-collapse &,
+    .searchbar-collapse & {
+        position: relative;
+    }
+
+    label {
+        font-weight: normal;
+        @extend .form-group;
+
+        .navbar-collapse &,
+        .searchbar-collapse & {
+            width: 100%;
+        }
+    }
+    .search-field {
+        @extend .form-control;
+        min-width: 100px;
+
+        .navbar-collapse &,
+        .searchbar-collapse & {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            padding-left: 1rem;
+            height: auto;
+            padding-right: 32px;
+            width: 100%;
+            border: 0;
+
+        }
+        .navbar-collapse & {
+            font-size: 0.875rem; /* 14/16 */
+            padding-top: .75rem;
+            padding-bottom: .75rem;
+            width: 260px;
+            background-color: #ebebeb;
+            transition: width .2s ease;
+
+            @include media-breakpoint-down(md) {
+                position: absolute;
+                right: 0;
+            }
+
+            &:focus {
+                width: 300px;
+            }
+            &::placeholder {
+                color: $brand-primary;
+            }
+        }
+    }
+
+    .search-submit {
+        @extend .btn;
+        @extend .btn-dark;
+
+
+        .navbar-collapse &,
+        .searchbar-collapse & {
+            position: absolute;
+            right: 0;
+            @extend .text-hide;
+            padding-right: 1rem;
+            height: auto;
+            min-width: 0;
+
+
+            &:before {
+                @extend .fa;
+                @extend .fa-search;
+                font-size: 18px;
+
+                color: $brand-primary;
+            }
+        }
+    }
+}

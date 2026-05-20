@@ -1,0 +1,12 @@
+/**
+ * Modal
+ *
+ */
+
+.modal-backdrop {
+    background-color: rgba(0,0,0,.8);
+
+    @include media-breakpoint-up(lg) {
+        display: none;
+    }
+}

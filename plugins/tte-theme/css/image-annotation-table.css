@@ -1,0 +1,11 @@
+.image-annotation-table {
+    width: 100%;
+}
+
+.annotation-image-container {
+    padding: 10px;
+}
+
+.annotation-image-container img {
+    max-width: 250px;
+}

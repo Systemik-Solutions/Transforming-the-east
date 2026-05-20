@@ -1,0 +1,116 @@
+/**
+ * Footer
+ *
+ */
+
+.site-footer {
+    background-color: $brand-primary;
+
+    * {
+        color: #000;
+    }
+}
+
+// footer head
+.footer-head {
+    position: relative;
+    padding-top: 6.25rem; /* 100/16 */
+
+    &:before,
+    &:after {
+        content: "";
+        display: block;
+        position: absolute;
+    }
+
+    &:before {
+        height: 3.125rem; /* 50/16 */
+        width: 0.25rem; /* 4/16 */
+        background-color: #000;
+        top: 0;
+        left: 0;
+    }
+    &:after {
+        height: 0.25rem; /* 4/16 */
+        width: 3.125rem; /* 50/16 */
+        background-color: #fff;
+        top: 8.125rem; /* 130/16 */
+        right: 0;
+
+        @include media-breakpoint-down(md) {
+            right: -15px;
+        }
+    }
+}
+.footer-head__brand {
+    display: inline-block;
+    width: 11.9375rem; /* 191/16 */
+}
+.footer-head__tagline {
+    color: #fff;
+    font-size: 1.875rem; /* 30/16 */
+    font-family: Antwerp, Georgia,serif;
+    font-style: italic;
+}
+
+// footer links
+.footer-links {
+    ul {
+        @extend .list-unstyled;
+
+        a {
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: bold;
+
+            &:hover,
+            &:focus {
+                text-decoration: underline;
+            }
+        }
+    }
+}
+.footer-links__title {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.footer-links__social {
+    height: 14.375rem; /* 230/16 */
+
+    a, i {
+        font-size: 20px;
+    }
+    label {
+        width: 7.5rem; /* 120/16 */
+        transform-origin: bottom left;
+        transform: rotate(90deg);
+        font-family: $font-family-mono;
+    }
+}
+
+// footer logos
+.footer-logos {
+    a {
+        display: block;
+    }
+    .inspired-logo,
+    .group-of-eight-logo {
+        width: 7.875rem; /* 126/16 */
+    }
+}
+
+// footer copyright
+.footer-copyright {
+    padding-top: 1rem;
+    border-top: 1px solid #333;
+
+    a {
+        font-size: 12px;
+        font-family: $font-family-mono;
+    }
+}
+.footer-copyright__act {
+    font-size: 10px;
+    font-family: $font-family-mono;
+}

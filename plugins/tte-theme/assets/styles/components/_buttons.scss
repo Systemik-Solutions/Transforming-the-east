@@ -1,0 +1,16 @@
+/**
+ * Buttons
+ *
+ */
+
+.btn-submit {
+    font-size: 0.875rem; /* 14/16 */
+    font-family: $font-family-mono;
+    padding: 0.75rem 2.1875rem; /* 12/16 */ /* 35/16 */
+}
+.btn-link {
+    &:hover,
+    &:focus {
+        text-decoration: none;
+    }
+}
