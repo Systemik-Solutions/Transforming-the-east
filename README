@@ -1,3 +1,41 @@
-Staging url:  https://transforming-east.wp-staging.performx.com.au/
+# Transforming the East
 
-Production url: https://textus-sinici.org/
+WordPress site for the *Transforming the East* project (Textus Sinici).
+
+- Staging: https://transforming-east.wp-staging.performx.com.au/
+- Production: https://textus-sinici.org/
+
+## Repository contents
+
+This repo holds the custom WordPress code for the site. It is not a full WordPress install — drop these directories into the corresponding locations under `wp-content/`.
+
+### `plugins/tte-theme`
+
+The site's custom theme. Provides page templates and single-post templates for the project's content types (classical sources, persons, places, stories, texts, translations, treatises, events, etc.) and the supporting CSS/JS assets.
+
+### `plugins/tte-omeka-project`
+
+Site customisation plugin. Registers the project's Advanced Custom Fields (ACF) field groups:
+
+- **Text Analysis Fields** — additional fields for the `Text Analysis` post type.
+- **Heurist Vocabulary** — fields for the Heurist term pages (`Language`, `Key Period`).
+- **Blog Fields** — fields for blog posts.
+
+Also contains REST integration code under `rest/` and shared PHP under `src/`.
+
+### `plugins/TTE-annotation`
+
+The **Glycerine** plugin — embeds IIIF-compatible image and text annotation tables and viewers using the Glycerine framework. Provides the following blocks:
+
+1. **Glycerine Table** — paginated annotation table with filters and annotation cutouts.
+2. **Glycerine Image Set** — IIIF manifest image-set viewer.
+3. **Glycerine Annotation Cutouts** — image annotation cutouts from IIIF sources.
+4. **Glycerine Collection** — embeds a Glycerine collection as a viewer iframe.
+
+Configured under **Settings → Glycerine** (API key + Glycerine server).
+
+See [plugins/TTE-annotation/README.md](plugins/TTE-annotation/README.md) for plugin-specific details.
+
+## Deployment
+
+Changes flow through the staging site before being promoted to production. See commit history for sync points between this repo and the live environments.

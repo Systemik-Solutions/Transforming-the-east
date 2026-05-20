@@ -33,8 +33,11 @@ include_once(plugin_dir_path(__FILE__) . 'includes/admin-settings.php');
 
 function tte_annotation_enqueue_assets()
 {
+
+    $force_enqueue = !empty($GLOBALS['tte_force_enqueue']);
+
     wp_enqueue_style(
-        'glycerine-main-css',
+        'tte-annotation-main-css',
         plugin_dir_url(__FILE__) . 'assets/css/main.css',
         array(),
         filemtime(plugin_dir_path(__FILE__) . 'assets/css/main.css')
@@ -51,31 +54,33 @@ function tte_annotation_enqueue_assets()
 
     // Enqueue the Glycerine Viewer library
     wp_enqueue_style(
-        'glycerine-viewer-style',
+        'tte-annotation-viewer-style',
         'https://unpkg.com/glycerine-viewer@latest/jslib/style.css',
         [],
         null
     );
 
     wp_enqueue_script(
-        'glycerine-viewer-lib',
+        'tte-annotation-viewer-lib',
         'https://unpkg.com/glycerine-viewer@latest/jslib/glycerine-viewer.umd.cjs',
         [],
         null,
         true
     );
 
-    //Choices.js
-    wp_enqueue_style('choices', 'https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css', array(), null);
-    wp_enqueue_script('choices', 'https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js', array(), null, true);
 
-    wp_enqueue_script(
-        'glycerine-text-annotation-table',
-        plugin_dir_url(__FILE__) . 'assets/js/text-annotation.js',
-        array('jquery'),
-        filemtime(plugin_dir_path(__FILE__) . 'assets/js/text-annotation.js'),
-        true
-    );
+    if ((is_singular() && has_block('glycerine/text-annotation')) || $force_enqueue) {
+        wp_enqueue_style('choices', 'https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css', array(), null);
+        wp_enqueue_script('choices', 'https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js', array(), null, true);
+
+        wp_enqueue_script(
+            'glycerine-text-annotation-table',
+            plugin_dir_url(__FILE__) . 'assets/js/text-annotation.js',
+            array('jquery'),
+            filemtime(plugin_dir_path(__FILE__) . 'assets/js/text-annotation.js'),
+            true
+        );
+    }
 }
 add_action('wp_enqueue_scripts', 'tte_annotation_enqueue_assets');
 
@@ -139,7 +144,7 @@ function tte_annotation_render_text_annotation_block($attributes)
     ]);
 
 
-    $block_cache_id = 'annotation_table_' . substr(md5($block_cache_id), 0, 16);
+    $block_cache_id = 'tte_annotation_table_' . substr(md5($block_cache_id), 0, 16);
 
 
     // Start output buffering

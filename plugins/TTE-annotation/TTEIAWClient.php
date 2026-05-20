@@ -14,17 +14,17 @@ class TTEIAWClient
     public function get($url, $enableCache = false, $blockId = '')
     {
 
-        if ($enableCache) {
-            // Generate a cache key based on the request URL
-            $cacheKey = 'tte_glycerine_' . $blockId . '_' . md5($url);
-            // Attempt to retrieve cached data
-            $cachedData = get_transient($cacheKey);
+        // if ($enableCache) {
+        //     // Generate a cache key based on the request URL
+        //     $cacheKey = 'tte_annotation_glycerine_' . $blockId . '_' . md5($url);
+        //     // Attempt to retrieve cached data
+        //     $cachedData = get_transient($cacheKey);
 
-            // If we have cached data, return it
-            if ($cachedData !== false) {
-                return $cachedData;
-            }
-        }
+        //     // If we have cached data, return it
+        //     if ($cachedData !== false) {
+        //         return $cachedData;
+        //     }
+        // }
 
         $response = wp_remote_get($url, [
             'timeout' => 180,
@@ -35,18 +35,20 @@ class TTEIAWClient
         ]);
         $body =  wp_remote_retrieve_body($response);
 
-        if (!empty($body)) {
+        return json_decode($body, true);
 
-            $decodedData = json_decode($body, true);
+        // if (!empty($body)) {
 
-            if ($enableCache) {
-                // cache for 7 days
-                set_transient($cacheKey, $decodedData, 7 * DAY_IN_SECONDS);
-            }
-            return $decodedData;
-        }
+        //     $decodedData = json_decode($body, true);
 
-        return null;
+        //     if ($enableCache) {
+        //         // cache for 7 days
+        //         set_transient($cacheKey, $decodedData, 7 * DAY_IN_SECONDS);
+        //     }
+        //     return $decodedData;
+        // }
+
+        // return null;
     }
 
 
