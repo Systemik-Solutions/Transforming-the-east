@@ -1,56 +1,70 @@
-jQuery( document ).ready(function($) {
-    // Create carousels.
-    $('.omaa-carousel').each(function () {
-        const carousel = new Carousel($(this));
-    });
-
-    // Solve the scroll issue with the default tab handler.
-    $('.nav-tabs a.nav-link').off('click').on('click', function (event) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        $(this).tab('show');
-    });
-});
-
-
 document.addEventListener('DOMContentLoaded', function () {
-  document.addEventListener('click', function (e) {
-    const toggle = e.target.closest('.dropdown-toggle');
+    document.querySelectorAll('.tte-project .nav-tabs').forEach(function (tabList) {
+        tabList.addEventListener('click', function (event) {
+            const link = event.target.closest('a.nav-link[href^="#"]');
+            if (!link) {
+                return;
+            }
 
-    // If clicking a dropdown toggle
-    if (toggle) {
-      e.preventDefault();
+            const panel = document.querySelector(link.getAttribute('href'));
+            if (!panel) {
+                return;
+            }
 
-      const menuId = toggle.getAttribute('id');
-      if (!menuId) return;
+            event.preventDefault();
 
-      const menu = document.querySelector(
-        `.dropdown-menu[aria-labelledby="${menuId}"]`
-      );
-      if (!menu) return;
+            tabList.querySelectorAll('.nav-link').forEach(function (item) {
+                item.classList.remove('active');
+                item.setAttribute('aria-selected', 'false');
+            });
 
-      const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+            const tabContent = panel.closest('.tab-content');
+            if (tabContent) {
+                tabContent.querySelectorAll('.tab-pane').forEach(function (item) {
+                    item.classList.remove('active', 'show');
+                });
+            }
 
-      // Close all other dropdowns
-      document.querySelectorAll('.dropdown-toggle').forEach(t => {
-        t.setAttribute('aria-expanded', 'false');
-      });
-      document.querySelectorAll('.dropdown-menu').forEach(m => {
-        m.style.display = 'none';
-      });
-
-      // Toggle current
-      toggle.setAttribute('aria-expanded', String(!isOpen));
-      menu.style.display = isOpen ? 'none' : 'block';
-      return;
-    }
-
-    // Click outside → close all
-    document.querySelectorAll('.dropdown-toggle').forEach(t => {
-      t.setAttribute('aria-expanded', 'false');
+            link.classList.add('active');
+            link.setAttribute('aria-selected', 'true');
+            panel.classList.add('active', 'show');
+        });
     });
-    document.querySelectorAll('.dropdown-menu').forEach(m => {
-      m.style.display = 'none';
+
+    document.addEventListener('click', function (event) {
+        const toggle = event.target.closest('.tte-project .dropdown-toggle');
+        const pluginRoot = event.target.closest('.tte-project');
+
+        if (toggle) {
+            event.preventDefault();
+            const menuId = toggle.getAttribute('id');
+            if (!menuId || !pluginRoot) {
+                return;
+            }
+
+            const menu = pluginRoot.querySelector('.dropdown-menu[aria-labelledby="' + menuId + '"]');
+            if (!menu) {
+                return;
+            }
+
+            const isOpen = toggle.getAttribute('aria-expanded') === 'true';
+            pluginRoot.querySelectorAll('.dropdown-toggle').forEach(function (item) {
+                item.setAttribute('aria-expanded', 'false');
+            });
+            pluginRoot.querySelectorAll('.dropdown-menu').forEach(function (item) {
+                item.style.display = 'none';
+            });
+
+            toggle.setAttribute('aria-expanded', String(!isOpen));
+            menu.style.display = isOpen ? 'none' : 'block';
+            return;
+        }
+
+        document.querySelectorAll('.tte-project .dropdown-toggle').forEach(function (item) {
+            item.setAttribute('aria-expanded', 'false');
+        });
+        document.querySelectorAll('.tte-project .dropdown-menu').forEach(function (item) {
+            item.style.display = 'none';
+        });
     });
-  });
 });

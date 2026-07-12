@@ -58,10 +58,14 @@ class OmekaSearch
 
         if (!$result || !isset($result['items'])) return ['items' => [], 'total' => 0];
 
+        $items = array_filter($result['items'] ?? [], function ($item) {
+            return is_array($item) && array_key_exists('o:id', $item);
+        });
+
         return [
             'entities' => array_map(function ($item) {
                 return new OmekaEntity($item);
-            }, $result['items'] ?? []),
+            }, array_values($items)),
             'total' => $result['total'] ?? 0
         ];
     }

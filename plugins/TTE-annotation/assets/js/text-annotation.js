@@ -1,6 +1,6 @@
 jQuery(document).ready(function ($) {
     const allRows = Array.from(
-        document.querySelectorAll("#annotation-table-body tr"),
+        document.querySelectorAll("#annotation-table-body > tr"),
     );
 
     const table = document.getElementById("annotation-table");
@@ -51,8 +51,31 @@ jQuery(document).ready(function ($) {
     }
 
 
-    const startCanvasID = getQueryParam("startCanvasID");
-    const startAnnotationID = getQueryParam("startAnnotationID");
+    const startCanvasID =
+        getQueryParam("start_cavas") ||
+        getQueryParam("startCanvasID") ||
+        getQueryParam("startcanvasID");
+
+    const canvasAnnotationMap = new Map();
+    allRows.forEach((row) => {
+        const canvasId = row.querySelector("input.canvas-id")?.value;
+        const annotationId = row.querySelector("input.annotation-id")?.value;
+        if (canvasId && annotationId && !canvasAnnotationMap.has(canvasId)) {
+            canvasAnnotationMap.set(canvasId, annotationId);
+        }
+    });
+
+    function updateStartUrlParams(canvasId) {
+        if (!canvasId) return;
+
+        const url = new URL(window.location.href);
+        url.searchParams.set("start_cavas", canvasId);
+        url.searchParams.delete("startCanvasID");
+        url.searchParams.delete("startcanvasID");
+        url.searchParams.delete("startAnnotationID");
+
+        window.history.replaceState({}, "", url.toString());
+    }
 
     let isFirstLoad = true;
 
@@ -71,20 +94,20 @@ jQuery(document).ready(function ($) {
         showSettingPaneButton: ele.dataset.showSettingPaneButton === "true",
         defaultInfoPanel: ele.dataset.defaultInfoPanel === "true",
         displayAnnotations: "false",
-        onMouseEnterAnnotation: (data) => {
-            allRows.forEach((row) => {
-                const input = row.querySelector("input.annotation-id");
-                if (input && input.value === data) {
-                    row.classList.add("highlighted-annotation-row");
-                    return;
-                }
-            });
-        },
-        onMouseLeaveAnnotation: () => {
-            allRows.forEach((row) => {
-                row.classList.remove("highlighted-annotation-row");
-            });
-        },
+        // onMouseEnterAnnotation: (data) => {
+        //     allRows.forEach((row) => {
+        //         const input = row.querySelector("input.annotation-id");
+        //         if (input && input.value === data) {
+        //             row.classList.add("highlighted-annotation-row");
+        //             return;
+        //         }
+        //     });
+        // },
+        // onMouseLeaveAnnotation: () => {
+        //     allRows.forEach((row) => {
+        //         row.classList.remove("highlighted-annotation-row");
+        //     });
+        // },
         onOsdInitialized: () => {
             // Hide all rows first
             allRows.forEach((row) => {
@@ -148,12 +171,27 @@ jQuery(document).ready(function ($) {
         },
         onCanvasLoaded: (data) => {
             currentActiveCanvasID = data;
+            updateStartUrlParams(data);
             updateSearchNavigations();
 
+            if (startCanvasID && startCanvasID !== "" && isFirstLoad) {
+                const startAnnotationID = canvasAnnotationMap.get(startCanvasID);
 
-            if(startAnnotationID && startCanvasID && startAnnotationID != '' && startCanvasID != '' && isFirstLoad){
-                viewer.activateCanvas(startCanvasID);
-                tableGoToRow(startAnnotationID);
+                if (data !== startCanvasID) {
+                    isFirstLoad = false;
+                    viewer.activateCanvas(startCanvasID);
+                    if (startAnnotationID) {
+                        tableGoToRow(startAnnotationID);
+                        updateStartUrlParams(startCanvasID);
+                    }
+                    currentActiveCanvasID = startCanvasID;
+                    return;
+                }
+
+                if (startAnnotationID) {
+                    tableGoToRow(startAnnotationID);
+                    updateStartUrlParams(startCanvasID);
+                }
                 currentActiveCanvasID = startCanvasID;
             }
 
@@ -164,18 +202,18 @@ jQuery(document).ready(function ($) {
     // Initialize the viewer.
     viewer.init();
 
-    // Hover rows to trigger annotation highlight in viewer
-    allRows.forEach((row) => {
-        const annotationId = row.querySelector("input.annotation-id")?.value;
-        row.addEventListener("mouseenter", () => {
-            if (annotationId) {
-                viewer.highlightAnnotation(annotationId);
-            }
-        });
-        row.addEventListener("mouseleave", () => {
-            viewer.clearHighlight();
-        });
-    });
+    // // Hover rows to trigger annotation highlight in viewer
+    // allRows.forEach((row) => {
+    //     const annotationId = row.querySelector("input.annotation-id")?.value;
+    //     row.addEventListener("mouseenter", () => {
+    //         if (annotationId) {
+    //             viewer.highlightAnnotation(annotationId);
+    //         }
+    //     });
+    //     row.addEventListener("mouseleave", () => {
+    //         viewer.clearHighlight();
+    //     });
+    // });
 
     function updateSearchNavigations() {
         const navContainer = document.getElementById("search-navigation");

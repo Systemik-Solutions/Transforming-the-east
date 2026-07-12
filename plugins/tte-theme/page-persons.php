@@ -3,7 +3,7 @@
 $recResourceTemplateIDs = [
     \TTE\OmekaMap::get('resourceTemplates', 'person')['id']
 ];
-$itemsPerPage = isset($_GET['nr']) ? $_GET['nr'] : '10';
+$itemsPerPage = isset($_GET['nr']) ? max(1, min(100, absint($_GET['nr']))) : 10;
 $pageNum = empty($_GET['cp']) ? 1 : intval($_GET['cp']);
 
 
@@ -26,8 +26,6 @@ $omekaEntities = $searchResult['entities'];
 $totalItems = $searchResult['total'];
 ?>
 
-
-<?php get_template_part('templates/page', 'header'); ?>
 
 <div class="page-content">
     <div class="container-fluid">
@@ -72,8 +70,8 @@ $totalItems = $searchResult['total'];
 
         <div class="block-view mt-2">
             <?php
-            get_template_part('templates/list', 'classicalSourceWork', [
-                'classicalSourceWork' => $omekaEntities,
+            tte_omeka_plugin_get_template_part('list', 'entities', [
+                'entities' => tte_omeka_create_entity_tile_data($omekaEntities),
             ]);
             ?>
             <div id="pagination" class="horizontal-center"></div>

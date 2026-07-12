@@ -6,8 +6,8 @@ if (!isset($entity)) {
     global $wp_query;
     $wp_query->set_404();
     status_header(404);
-    get_template_part(404);
-    exit();
+    echo '<p>' . esc_html__('Place not found.', 'tte-theme') . '</p>';
+    return;
 }
 
 $properties = $entity->getProperties();
@@ -34,23 +34,25 @@ $sigmaEntities = array_merge([$entity], $relatedEntities);
 $sigmaGraph = tte_omeka_get_sigma_node_graph($sigmaEntities);
 
 ?>
-<?php
-get_template_part('templates/breadcrumbs', '', [
-    'isPlacePage' => true,
-    'placeTitle' => $entity->getTitle(),
-]);
-?>
-
-
-<div id="content" class="site-content" role="document">
-    <div class="content-wrap">
-        <main class="main">
             <div class="single-header">
                 <div class="container-fluid">
-                    <h2 class="single-title"><?php echo esc_html($entity->getTitle()) ?></h2>
+                    <div class="d-flex">
+                        <h1 class="single-title mb-0 pr-5 mt-0"><?php echo esc_html($entity->getTitle()) ?></h2>
+                        <!-- If user login with admin or curator, show the checkbox -->
+                        <?php if (current_user_can('edit_posts')) : ?>
+                            <div class="vertical-center">
+                                <input type="checkbox"
+                                    id="markAsFeatured"
+                                    data-entity-id="<?php echo esc_attr($entityID); ?>"
+                                    style="margin-right:5px;"
+                                    <?php checked(tte_omeka_check_whether_entity_is_featured($entityID)); ?> />
+                                Feature record on homepage
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
-            <div class="single-content">
+            <div class="single-content pt-3">
                 <div class="container-fluid">
                     <ul class="nav nav-tabs" id="textPageTab" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -94,8 +96,8 @@ get_template_part('templates/breadcrumbs', '', [
 
                             <div class="block-view">
                                 <?php
-                                get_template_part('templates/list', 'translation', [
-                                    'translation' => tte_omeka_create_translation_tile_data($relatedEntities),
+                                tte_omeka_plugin_get_template_part('list', 'entities', [
+                                    'entities' => tte_omeka_create_entity_tile_data($relatedEntities),
                                 ]);
                                 ?>
                             </div>
@@ -103,10 +105,10 @@ get_template_part('templates/breadcrumbs', '', [
                             <div class="network-view" style="display: none;">
                                 <div id="network-container">
                                     <div id="network-controls">
-                                        <button id="network-fullscreen" class="network-button" style=" background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/full-screen.svg');"></button>
-                                        <button id="network-zoomIn" class="network-button" style=" background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/zoom-in.svg');"></button>
-                                        <button id="network-zoomOut" class="network-button" style=" background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/zoom-out.svg');"></button>
-                                        <button id="network-fitScreen" class="network-button" style=" background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/show-graph.svg'); background-size: 40% 40%; background-position: center center; background-repeat: no-repeat;"></button>
+                                        <button id="network-fullscreen" class="network-button" style=" background-image: url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/full-screen.svg'); ?>');"></button>
+                                        <button id="network-zoomIn" class="network-button" style=" background-image: url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/zoom-in.svg'); ?>');"></button>
+                                        <button id="network-zoomOut" class="network-button" style=" background-image: url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/zoom-out.svg'); ?>');"></button>
+                                        <button id="network-fitScreen" class="network-button" style=" background-image: url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/show-graph.svg'); ?>'); background-size: 40% 40%; background-position: center center; background-repeat: no-repeat;"></button>
                                     </div>
                                     <div id="legendDiv"></div>
                                     <div id="network-tooltip"></div>
@@ -141,9 +143,6 @@ get_template_part('templates/breadcrumbs', '', [
                     </div>
                 </div>
             </div>
-        </main><!-- /.main -->
-    </div><!-- /.content-wrap -->
-</div>
 
 
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
@@ -222,13 +221,15 @@ get_template_part('templates/breadcrumbs', '', [
         return renderer;
     })();
 
-    urls = ['<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/person.svg', '<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/place.svg', '<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/book.svg', '<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/newspaper.svg', '<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/translation.svg'];
+    urls = <?php echo wp_json_encode(array_map(static function ($icon) {
+        return TTE_THEME_PLUGIN_URL . 'image/sigma.js/' . $icon;
+    }, ['person.svg', 'place.svg', 'book.svg', 'newspaper.svg', 'translation.svg']), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     loaded = 0;
 
     // Convert PHP array to JavaScript
-    var nodes = <?php echo json_encode($sigmaGraph['nodes']); ?>;
-    var edges = <?php echo json_encode($sigmaGraph['edges']); ?>;
-    var legendMap = <?php echo json_encode($sigmaGraph['legendMap']); ?>;
+    var nodes = <?php echo wp_json_encode($sigmaGraph['nodes'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    var edges = <?php echo wp_json_encode($sigmaGraph['edges'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    var legendMap = <?php echo wp_json_encode($sigmaGraph['legendMap'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
     // Wait for all images to be loaded before instanciating sigma:
     urls.forEach(function(url) {
@@ -355,10 +356,10 @@ get_template_part('templates/breadcrumbs', '', [
                     var elem = document.getElementById('network-container');
                     if (!document.fullscreenElement) {
                         elem.requestFullscreen();
-                        document.getElementById('network-fullscreen').style.backgroundImage = "url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/exit-full-screen.svg')";
+                        document.getElementById('network-fullscreen').style.backgroundImage = "url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/exit-full-screen.svg'); ?>')";
                     } else {
                         document.exitFullscreen();
-                        document.getElementById('network-fullscreen').style.backgroundImage = "url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/full-screen.svg')";
+                        document.getElementById('network-fullscreen').style.backgroundImage = "url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/full-screen.svg'); ?>')";
                     }
                 });
 
@@ -436,22 +437,13 @@ get_template_part('templates/breadcrumbs', '', [
     // Function to show tooltip
     function showTooltip(node) {
         var tooltip = document.getElementById('network-tooltip');
-        tooltip.innerHTML = ''
-        if (node.name != null) {
-            tooltip.innerHTML += '<p>' + node.fullName + '</p>'; // Update tooltip content
-        }
-        if (node.year != null) {
-            tooltip.innerHTML += '<p>' + node.year + '</p>'; // Update tooltip content
-        }
-        if (node.language != null) {
-            tooltip.innerHTML += '<p>' + node.language + '</p>'; // Update tooltip content
-        }
-        if (node.bookType != null) {
-            tooltip.innerHTML += '<p>' + node.bookType + '</p>'; // Update tooltip content
-        }
-        if (node.translator != null) {
-            tooltip.innerHTML += '<p>' + node.translator + '</p>'; // Update tooltip content
-        }
+        tooltip.replaceChildren();
+        [node.fullName, node.year, node.language, node.bookType, node.translator].forEach(function(value) {
+            if (value == null || value === '') return;
+            var paragraph = document.createElement('p');
+            paragraph.textContent = value;
+            tooltip.appendChild(paragraph);
+        });
 
         tooltip.style.display = 'block'; // Show tooltip
     }
@@ -483,7 +475,43 @@ get_template_part('templates/breadcrumbs', '', [
     document.addEventListener('mousemove', updateTooltipPosition);
 </script>
 
+
 <script>
+    var ajaxurl = tteTheme.ajaxUrl;
+    // Handle "Mark as Featured" checkbox change
+    $('#markAsFeatured').on('change', function(e) {
+        const $cb = $(this);
+        const entityID = $cb.data('entity-id');
+        const shouldAdd = $cb.is(':checked');
+        const actionType = shouldAdd ? 'add' : 'remove';
+
+        if (!entityID) {
+            alert('Missing entity id.');
+            $cb.prop('checked', !shouldAdd); // revert
+            return;
+        }
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'tte_update_featured_record',
+                nonce: tteTheme.featuredNonce,
+                action_type: actionType,
+                entity_id: entityID
+            },
+            success: function(response) {},
+            error: function(jqXHR) {
+                try {
+                    const err = JSON.parse(jqXHR.responseText);
+                    alert(err.message || err.data?.message || 'Request failed.');
+                } catch (e) {
+                    console.error('Unexpected error', jqXHR.responseText);
+                    alert('Unexpected error occurred. Please refresh the page and try again.');
+                }
+            }
+        });
+    });
+
     function bindViewClickEvent() {
         document.querySelectorAll('input[name="typeFilter"]').forEach(function(input) {
             input.addEventListener('change', function() {

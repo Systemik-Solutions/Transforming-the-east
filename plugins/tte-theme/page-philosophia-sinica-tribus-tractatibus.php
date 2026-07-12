@@ -1,5 +1,6 @@
 <?php
-$currentURL = $_SERVER['HTTP_HOST'];
+$uploads = wp_upload_dir();
+$pdfBaseUrl = trailingslashit($uploads['baseurl']) . '2023/10/';
 ?>
 
 <div class="page-content">
@@ -12,13 +13,13 @@ $currentURL = $_SERVER['HTTP_HOST'];
 
             <div class="col-6 pl-0 pr-0">
                 <select id="pdfDropdown1" style="height: 4%; width:40%" class="choices-select">
-                    <option value="<?php echo "https://$currentURL/wp-content/uploads/2023/10/sample1.pdf"; ?>" selected>
+                    <option value="<?php echo esc_url($pdfBaseUrl . 'sample1.pdf'); ?>" selected>
                         Manuscript
                     </option>
-                    <option value="<?php echo "https://$currentURL/wp-content/uploads/2023/10/sample2.pdf"; ?>">
+                    <option value="<?php echo esc_url($pdfBaseUrl . 'sample2.pdf'); ?>">
                         Printed text
                     </option>
-                    <option value="<?php echo "https://$currentURL/wp-content/uploads/2023/10/Philosophia-Sinica_Treatise-1_Final-2.pdf"; ?>">
+                    <option value="<?php echo esc_url($pdfBaseUrl . 'Philosophia-Sinica_Treatise-1_Final-2.pdf'); ?>">
                         Transcription
                     </option>
 
@@ -26,7 +27,7 @@ $currentURL = $_SERVER['HTTP_HOST'];
 
                 <div id="pdfDisplayArea1" class="mt-2">
                     <iframe 
-                        src="<?php echo "https://$currentURL/wp-content/uploads/2023/10/sample1.pdf"; ?>"
+                        src="<?php echo esc_url($pdfBaseUrl . 'sample1.pdf'); ?>"
                         width="100%"
                         height="850"
                         title="PDF Document">
@@ -36,20 +37,20 @@ $currentURL = $_SERVER['HTTP_HOST'];
             </div>
             <div class="col-6 pl-0 pr-0">
                 <select id="pdfDropdown2" style="height: 4%; width:40%" class="choices-select">
-                    <option value="<?php echo "https://$currentURL/wp-content/uploads/2023/10/sample1.pdf"; ?>">
+                    <option value="<?php echo esc_url($pdfBaseUrl . 'sample1.pdf'); ?>">
                         Manuscript
                     </option>
-                    <option value="<?php echo "https://$currentURL/wp-content/uploads/2023/10/sample2.pdf"; ?>" selected>
+                    <option value="<?php echo esc_url($pdfBaseUrl . 'sample2.pdf'); ?>" selected>
                         Printed text
                     </option>
-                    <option value="<?php echo "https://$currentURL/wp-content/uploads/2023/10/Philosophia-Sinica_Treatise-1_Final-2.pdf"; ?>">
+                    <option value="<?php echo esc_url($pdfBaseUrl . 'Philosophia-Sinica_Treatise-1_Final-2.pdf'); ?>">
                         Transcription
                     </option>
                 </select>
 
                 <div id="pdfDisplayArea2" class="mt-2">
                     <iframe 
-                        src="<?php echo "https://$currentURL/wp-content/uploads/2023/10/sample2.pdf"; ?>"
+                        src="<?php echo esc_url($pdfBaseUrl . 'sample2.pdf'); ?>"
                         width="100%"
                         height="850"
                         title="PDF Document View">
@@ -60,9 +61,6 @@ $currentURL = $_SERVER['HTTP_HOST'];
         </div>
     </div>
 </div>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
-<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <script>
     const choices1 = new Choices('#pdfDropdown1', {

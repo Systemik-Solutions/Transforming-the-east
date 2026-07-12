@@ -1,160 +1,36 @@
 <?php
 
-$sage_includes = [
-    'lib/config.php',    // Config
-    'lib/assets.php',    // Scripts and stylesheets
-    'lib/extras.php',    // Custom functions
-    'lib/setup.php',     // Theme setup
-    'lib/titles.php',    // Page titles
-    'lib/wrapper.php',   // Theme wrapper class
-    'lib/customizer.php', // Theme customizer
-    'lib/class-tgm-plugin-activation.php',
-    'lib/theme-inc.php',
-    'lib/navwalker.php'
-];
-
-foreach ($sage_includes as $file) {
-    if (!$filepath = locate_template($file)) {
-        trigger_error(sprintf(__('Error locating %s for inclusion', 'sage'), $file), E_USER_ERROR);
-    }
-
-    require_once $filepath;
+if (!defined('ABSPATH')) {
+    exit;
 }
-unset($file, $filepath);
-
 
 add_action('wp', function () {
-    $template = get_page_template_slug();
-    if (!$template) {
-        $template = basename(get_page_template()); // fallback full file name
-    }
-    if ($template == 'page-texts.php') {
+    if (is_page('texts') || get_query_var('textID')) {
         add_filter('glycerine/force_enqueue', '__return_true');
     }
 });
 
 /**
- * Enqueue the child theme admin styles and scripts.
+ * Load a template part from this plugin without relying on the active theme.
  */
-function tte_omeka_load_admin_theme_scripts()
+function tte_omeka_plugin_get_template_part($template, $part = null, $args = [])
 {
-    // Dequeue the parent style first, as the parent theme loads it unconditionally.
-    wp_dequeue_style('style');
-    $theme = wp_get_theme();
-    wp_enqueue_style(
-        'usyd-style',
-        get_stylesheet_directory_uri() . '/style.css',
-        array(),
-        $theme->parent()->get('Version')
-    );
-}
-add_action('admin_enqueue_scripts', 'tte_omeka_load_admin_theme_scripts');
-
-/**
- * Enqueue the child theme styles and scripts.
- */
-function tte_omeka_load_theme_scripts()
-{
-
-    // leaflet map
-    wp_enqueue_style('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css', array(), null);
-    wp_enqueue_script('leaflet', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js', array(), null, true);
-
-    if (is_page('translations') || is_page('places')) {
-        // Load translation map page libraries.
-        wp_enqueue_style('choices', 'https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css', array(), null);
-        wp_enqueue_script('choices', 'https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js', array(), null, true);
-        wp_enqueue_style('rslider', get_stylesheet_directory_uri() . '/css/rSlider.min.css', array(), null);
-        wp_enqueue_script('rslider', get_stylesheet_directory_uri() . '/js/rSlider.min.js', array(), null, true);
+    $template_path = TTE_THEME_PLUGIN_DIR . 'templates/' . $template;
+    if ($part) {
+        $template_path .= '-' . $part;
     }
-    // Dequeue the parent style first, as the parent theme loads it unconditionally.
-    wp_dequeue_style('style');
-    $theme = wp_get_theme();
-    wp_enqueue_style(
-        'usyd-style',
-        get_stylesheet_directory_uri() . '/style.css',
-        array(),
-        $theme->parent()->get('Version')
-    );
+    $template_path .= '.php';
 
-    // Load carousel styles and scripts.
-    wp_enqueue_style(
-        'omaa-carousel',
-        get_stylesheet_directory_uri() . '/css/carousel.css',
-        array(),
-        $theme->get('Version')
-    );
-    wp_enqueue_script('omaa-carousel', get_stylesheet_directory_uri() . '/js/carousel.js', array(), $theme->get('Version'), true);
-
-    // Pagination.js
-    wp_enqueue_style(
-        'panigation-js.css',
-        'https://cdnjs.cloudflare.com/ajax/libs/paginationjs/2.1.5/pagination.css',
-        [],
-        null
-    );
-
-    wp_enqueue_script(
-        'glycerine-viewer.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/paginationjs/2.1.5/pagination.min.js',
-        [],
-        null,
-        true
-    );
-
-    wp_enqueue_style(
-        'tte-style',
-        get_stylesheet_uri(),
-        array(),
-        time()
-    );
-
-    wp_enqueue_script(
-        'tte-main',
-        get_stylesheet_directory_uri() . '/js/main.js',
-        array(),
-        time(),
-        true
-    );
-
-    // Load image annotation table styles and scripts.
-    wp_enqueue_style(
-        'image-annotation-table',
-        get_stylesheet_directory_uri() . '/css/image-annotation-table.css',
-        [],
-        $theme->get('Version')
-    );
-
-    wp_enqueue_script(
-        'image-cropper',
-        'https://platform.readworkbench.org/js/utilities/image-cropper.js',
-        [],
-        false,
-        true
-    );
-
-    wp_enqueue_script(
-        'image-annotation-table',
-        get_stylesheet_directory_uri() . '/js/image-annotation-table.js',
-        ['jquery'],
-        $theme->get('Version'),
-        true
-    );
-
-    if (is_page('translations') || is_page('classics') || is_page('persons') || is_page('places')) {
-        $script_path = get_stylesheet_directory() . '/js/archive.js';
-        $script_url  = get_stylesheet_directory_uri() . '/js/archive.js';
-
-        wp_enqueue_script(
-            'omaa-archive',
-            $script_url,
-            [],
-            file_exists($script_path) ? filemtime($script_path) : null,
-            true
+    if (!file_exists($template_path)) {
+        trigger_error(
+            sprintf(esc_html__('Error locating %s for inclusion', 'tte-theme'), esc_html($template_path)),
+            E_USER_WARNING
         );
+        return;
     }
+
+    include $template_path;
 }
-add_action('wp_enqueue_scripts', 'tte_omeka_load_theme_scripts', 101);
 
 
 /**
@@ -183,7 +59,6 @@ function tte_omeka_get_term_values($entity, $fieldName)
             }
         }
     }
-
     return $values;
 }
 
@@ -204,13 +79,13 @@ function tte_omeka_get_template_attr($resourceTemplateID, $attribute)
 function tte_omeka_get_image_link($resourceTemplateID)
 {
     $imageMap = [
-        \TTE\OmekaMap::get('resourceTemplates', 'translation')['id'] => get_stylesheet_directory_uri() . '/image/sigma.js/translation.svg',
-        \TTE\OmekaMap::get('resourceTemplates', 'classicalSourceWork')['id'] =>  get_stylesheet_directory_uri() . '/image/sigma.js/book.svg',
-        \TTE\OmekaMap::get('resourceTemplates', 'locationHistoryRecord')['id'] => get_stylesheet_directory_uri() . '/image/sigma.js/location.svg',
-        \TTE\OmekaMap::get('resourceTemplates', 'place')['id'] => get_stylesheet_directory_uri() . '/image/sigma.js/place.svg',
-        \TTE\OmekaMap::get('resourceTemplates', 'person')['id'] => get_stylesheet_directory_uri() . '/image/sigma.js/person.svg'
+        \TTE\OmekaMap::get('resourceTemplates', 'translation')['id'] => TTE_THEME_PLUGIN_URL . 'image/sigma.js/translation.svg',
+        \TTE\OmekaMap::get('resourceTemplates', 'classicalSourceWork')['id'] => TTE_THEME_PLUGIN_URL . 'image/sigma.js/book.svg',
+        \TTE\OmekaMap::get('resourceTemplates', 'locationHistoryRecord')['id'] => TTE_THEME_PLUGIN_URL . 'image/sigma.js/location.svg',
+        \TTE\OmekaMap::get('resourceTemplates', 'place')['id'] => TTE_THEME_PLUGIN_URL . 'image/sigma.js/place.svg',
+        \TTE\OmekaMap::get('resourceTemplates', 'person')['id'] => TTE_THEME_PLUGIN_URL . 'image/sigma.js/person.svg'
     ];
-    return isset($imageMap[$resourceTemplateID]) ? $imageMap[$resourceTemplateID] : get_stylesheet_directory_uri() . '/image/sigma.js/place.svg';
+    return isset($imageMap[$resourceTemplateID]) ? $imageMap[$resourceTemplateID] : TTE_THEME_PLUGIN_URL . 'image/sigma.js/place.svg';
 }
 
 /**
@@ -249,22 +124,17 @@ function tte_omeka_get_date_year($fieldName, $entity)
 function tte_omeka_get_sigma_network_icons()
 {
     return [
-        plugin_dir_url(__FILE__) . '/image/sigma.js/person.svg',
-        plugin_dir_url(__FILE__) . '/image/sigma.js/place.svg',
-        plugin_dir_url(__FILE__) . '/image/sigma.js/policy-Inquiry-and-report.svg',
-        plugin_dir_url(__FILE__) . '/image/sigma.js/newsletter.svg',
-        plugin_dir_url(__FILE__) . '/image/sigma.js/community-group.svg',
-        plugin_dir_url(__FILE__) . '/image/sigma.js/education.svg'
+        TTE_THEME_PLUGIN_URL . 'image/sigma.js/person.svg',
+        TTE_THEME_PLUGIN_URL . 'image/sigma.js/place.svg',
+        TTE_THEME_PLUGIN_URL . 'image/sigma.js/image.svg',
+        TTE_THEME_PLUGIN_URL . 'image/sigma.js/newspaper.svg',
+        TTE_THEME_PLUGIN_URL . 'image/sigma.js/text.svg',
+        TTE_THEME_PLUGIN_URL . 'image/sigma.js/translation.svg'
     ];
 }
 
-/**
- * Get the tile render data from a collection of texts.
- *
- *
- * @return array
- */
-function tte_omeka_create_translation_tile_data($entities)
+
+function tte_omeka_create_entity_tile_data($entities)
 {
     $tileData = [];
     foreach ($entities as $entity) {
@@ -272,110 +142,20 @@ function tte_omeka_create_translation_tile_data($entities)
         $resourceTemplateID = $entity->getResourceTemplateId();
         $resourceID = $entity->getId();
 
-        if ($resourceTemplateID !=  \TTE\OmekaMap::get('resourceTemplates', 'translation')['id']) {
-            continue;
-        }
-
         $item = [
+            'id' => $resourceID,
+            'resourceTemplateID' => $entity->getResourceTemplateId(),
             'title' => $entity->getTitle(),
             'url' => tte_omeka_build_entity_url($resourceID, $resourceTemplateID),
-            'backgroundColor' => '#393A3B',
+            'collectionID' => !empty($entity->getProperty('field_schema_collection')) ? $entity->getProperty('field_schema_collection')[0]['@value'] : null,
+            'backgroundColor' => tte_omeka_get_template_attr($resourceTemplateID, 'color'),
+            'author' => tte_omeka_get_term_values($entity, 'field_schema_author'),
+            'date' => tte_omeka_get_term_values($entity, 'field_schema_datecreated'),
             'year' => implode(', ', tte_omeka_get_term_values($entity, 'field_schema_startdate')),
             'language' => implode(', ', tte_omeka_get_term_values($entity, 'field_schema_language')),
             'bookType' => implode(', ', tte_omeka_get_term_values($entity, 'field_te_booktype')),
             'translator' => implode(', ', tte_omeka_get_term_values($entity, 'field_schema_translator')),
-        ];
-
-        $tileData[] = $item;
-    }
-
-    return $tileData;
-}
-
-/**
- * Get the tile render data from a collection of texts.
- *
- *
- * @return array
- */
-function tte_omeka_create_classicalSourceWork_tile_data($texts)
-{
-    $tileData = [];
-    foreach ($texts as $text) {
-
-        $resourceTemplateID = $text->getResourceTemplateId();
-        $resourceID = $text->getId();
-
-        // if ($resourceTemplateID !=  \TTE\OmekaMap::get('resourceTemplates', 'classicalSourceWork')['id']) {
-        //     continue;
-        // }
-
-        $item = [
-            'title' => $text->getTitle(),
-            'url' => tte_omeka_build_entity_url($resourceID, $resourceTemplateID),
-            'backgroundColor' => tte_omeka_get_template_attr($resourceTemplateID, 'color'),
-        ];
-
-        $tileData[] = $item;
-    }
-
-    return $tileData;
-}
-
-
-function tte_omeka_create_story_tile_data($entites)
-{
-    $tileData = [];
-    foreach ($entites as $entity) {
-
-        $resourceTemplateID = $entity->getResourceTemplateId();
-        $resourceID = $entity->getId();
-
-        if ($resourceTemplateID !=  \TTE\OmekaMap::get('resourceTemplates', 'story')['id']) {
-            continue;
-        }
-
-        $item = [
-            'title' => $entity->getTitle(),
-            'url' => tte_omeka_get_term_values($entity, 'field_schema_url'),
-            'backgroundColor' => tte_omeka_get_template_attr($resourceTemplateID, 'color'),
-            'author' => tte_omeka_get_term_values($entity, 'field_schema_author'),
             'subtitle' => tte_omeka_get_term_values($entity, 'field_schema_description'),
-        ];
-
-        $tileData[] = $item;
-    }
-
-    return $tileData;
-}
-
-
-/**
- * Get the tile render data from a collection of texts.
- *
- *
- * @return array
- */
-function tte_omeka_create_text_tile_data($texts)
-{
-    $tileData = [];
-    foreach ($texts as $text) {
-
-        $resourceTemplateID = $text->getResourceTemplateId();
-        $resourceID = $text->getId();
-
-        if ($resourceTemplateID !=  \TTE\OmekaMap::get('resourceTemplates', 'text')['id']) {
-            continue;
-        }
-
-        $collectionID = !empty($text->getProperty('field_schema_collection')) ? $text->getProperty('field_schema_collection')[0]['@value'] : null;
-
-        $item = [
-            'id' => $resourceID,
-            'title' => $text->getTitle(),
-            'url' => tte_omeka_build_entity_url($resourceID, $resourceTemplateID),
-            'collectionID' => $collectionID,
-            'backgroundColor' => tte_omeka_get_template_attr($resourceTemplateID, 'color'),
         ];
 
         $tileData[] = $item;
@@ -498,7 +278,7 @@ function tte_omeka_get_table_display($properties, $includeMetaNames = [], $exclu
         $tableContent .= '<tr><td style="width:' . $tableWidth . ';font-weight:bold">Thumbnail</td><td>';
 
         $tableContent .=
-            '<img src="' . ($properties['thumbnail_display_urls']['large']) . '" ' .
+            '<img src="' . esc_url($properties['thumbnail_display_urls']['large']) . '" ' .
             'class="img-fluid mr-2 mb-2" />';
 
         $tableContent .= '</td></tr>';
@@ -535,7 +315,7 @@ function tte_omeka_get_table_display($properties, $includeMetaNames = [], $exclu
 
                 if ($item['type'] === 'resource:item') {
                     if (tte_omeka_get_entity_url_by_id($item['value_resource_id']) != null) {
-                        $tableContent .= '<a href="' . tte_omeka_get_entity_url_by_id($item['value_resource_id']) . '" target="_self">' . wp_kses($item['display_title'], $allowed_html) . '</a>';
+                        $tableContent .= '<a href="' . esc_url(tte_omeka_get_entity_url_by_id($item['value_resource_id'])) . '" target="_self">' . wp_kses($item['display_title'], $allowed_html) . '</a>';
                     } else {
 
                         if ($item['property_id'] == TTE\OmekaMap::get('propertyIDs', 'field_te_copylocation')['id']) {
@@ -559,7 +339,7 @@ function tte_omeka_get_table_display($properties, $includeMetaNames = [], $exclu
                     }
                 } elseif ($item['type'] === 'uri') {
                     $label = !empty($item['o:label']) && $item['o:label'] != '' ? $item['o:label'] : $item['@id'];
-                    $tableContent .= '<a href="' . $item['@id'] . '" target="_blank">' . wp_kses($label, $allowed_html) . '</a>';
+                    $tableContent .= '<a href="' . esc_url($item['@id']) . '" target="_blank" rel="noopener noreferrer">' . wp_kses($label, $allowed_html) . '</a>';
                 } elseif (
                     $item['type'] === 'resource:media'
                     && !empty($item['thumbnail_type'])
@@ -637,10 +417,10 @@ function tte_omeka_get_table_display($properties, $includeMetaNames = [], $exclu
                 } else if ($item['type'] === 'literal') {
                     $tableContent .= wp_kses($item['@value'], $allowed_html);
                 } else if ($item['type'] === 'html') {
-                    $tableContent .= $item['@value'];
+                    $tableContent .= wp_kses_post($item['@value']);
                 } else {
                     if (filter_var($item['@value'], FILTER_VALIDATE_URL)) {
-                        $tableContent .= '<a href="' . $item['@value'] . '" target="_blank">' . wp_kses($item['@value'], $allowed_html) . '</a>';
+                        $tableContent .= '<a href="' . esc_url($item['@value']) . '" target="_blank" rel="noopener noreferrer">' . esc_html($item['@value']) . '</a>';
                     } else {
                         $tableContent .= wp_kses($item['@value'], $allowed_html);
                     }
@@ -693,7 +473,7 @@ function tte_omeka_build_entity_url($entityID, $resourceTemplateID)
     return get_site_url(null, $slug . '/' . $entityID);
 }
 
-// 
+// Resolve an entity URL from its ID and optional resource template.
 function tte_omeka_get_entity_url_by_id($entityID, $resourceTemplateID = null)
 {
     if (empty($entityID)) {
@@ -742,313 +522,6 @@ function tte_omeka_format_property_label($label)
     // Capitalize words
     return ucwords($label);
 }
-
-/**
- * Overwrite the base theme breadcrumb function.
- *
- * @return void
- */
-function tte_omeka_breadcrumb(
-    $isHeuristTranslationPage = null,
-    $heuristTranslationPageTitle = null,
-    $isClassicalSourceWorkPage = null,
-    $heuristclassicalSourceWorkTitle = null,
-    $isTextPage = null,
-    $heuristTextTitle = null,
-    $isPersonPage = null,
-    $heuristPersonTitle = null,
-    $isEventPage = null,
-    $eventTitle = null,
-    $isTreatisePage = null,
-    $treatiseTitle = null,
-    $treatiseTextID = null,
-    $isPlacePage = null,
-    $placeTitle = null,
-    $isStoryPage = null,
-    $storyTitle = null,
-) {
-    /* === OPTIONS === */
-    $text['home']     = 'Home'; // text for the 'Home' link
-    $text['category'] = 'Archive by Category "%s"'; // text for a category page
-    $text['search']   = 'Search Results for "%s" Query'; // text for a search results page
-    $text['tag']      = 'Posts Tagged "%s"'; // text for a tag page
-    $text['author']   = 'Articles Posted by %s'; // text for an author page
-    $text['404']      = 'Error 404'; // text for the 404 page
-    $text['page']     = 'Page %s'; // text 'Page N'
-    $text['cpage']    = 'Comment Page %s'; // text 'Comment Page N'
-
-    $wrap_before    = '<div class="breadcrumbs breadcrumb" itemscope itemtype="http://schema.org/BreadcrumbList">'; // the opening wrapper tag
-    $wrap_after     = '</div><!-- .breadcrumbs -->'; // the closing wrapper tag
-    $sep            = '<span class="breadcrumbs__separator delimiter"> &gt; </span>'; // separator between crumbs
-    $before         = '<span class="breadcrumbs__current">'; // tag before the current crumb
-    $after          = '</span>'; // tag after the current crumb
-
-    $show_on_home   = 0; // 1 - show breadcrumbs on the homepage, 0 - don't show
-    $show_home_link = 1; // 1 - show the 'Home' link, 0 - don't show
-    $show_current   = 1; // 1 - show current page title, 0 - don't show
-    $show_last_sep  = 1; // 1 - show last separator, when current page title is not displayed, 0 - don't show
-    /* === END OF OPTIONS === */
-
-    global $post;
-    $home_url       = home_url('/');
-    $link           = '<span itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">';
-    $link          .= '<a class="breadcrumbs__link" href="%1$s" itemprop="item"><span itemprop="name">%2$s</span></a>';
-    $link          .= '<meta itemprop="position" content="%3$s" />';
-    $link          .= '</span>';
-    $parent_id      = ($post) ? $post->post_parent : '';
-    $home_link      = sprintf($link, $home_url, $text['home'], 1);
-
-    if ($isHeuristTranslationPage) {
-        // Generate breadcrumbs for Heurist translation page.
-        echo $wrap_before;
-        echo $home_link;
-        echo $sep . sprintf($link, tte_omeka_links('translations'), 'Translations', 0);
-        if (!empty($heuristTranslationPageTitle)) {
-            echo $sep . $before . esc_html($heuristTranslationPageTitle) . $after;
-        }
-        echo $wrap_after;
-    } else if ($isClassicalSourceWorkPage) {
-        // Generate breadcrumbs for Heurist classical source work page.
-        echo $wrap_before;
-        echo $home_link;
-        echo $sep . sprintf($link, tte_omeka_links('classics'), 'Classics', 0);
-        if (!empty($heuristclassicalSourceWorkTitle)) {
-            echo $sep . $before . esc_html($heuristclassicalSourceWorkTitle) . $after;
-        }
-        echo $wrap_after;
-    } else if ($isTextPage) {
-        // Generate breadcrumbs for Heurist text page.
-        echo $wrap_before;
-        echo $home_link;
-        echo $sep . sprintf($link, tte_omeka_links('texts'), 'Texts', 0);
-
-        if (!empty($heuristTextTitle)) {
-            echo $sep . $before . esc_html($heuristTextTitle) . $after;
-        }
-    } else if ($isPlacePage) {
-        // Generate breadcrumbs for Heurist place page.
-        echo $wrap_before;
-        echo $home_link;
-        echo $sep . sprintf($link, tte_omeka_links('places'), 'Places', 0);
-        if (!empty($placeTitle)) {
-            echo $sep . $before . esc_html($placeTitle) . $after;
-        }
-    } else if ($isStoryPage) {
-        // Generate breadcrumbs for Heurist place page.
-        echo $wrap_before;
-        echo $home_link;
-        echo $sep . sprintf($link, tte_omeka_links('stories'), 'Stories', 0);
-        if (!empty($storyTitle)) {
-            echo $sep . $before . esc_html($storyTitle) . $after;
-        }
-    } 
-    else if ($isTreatisePage) {
-        // Generate breadcrumbs for Heurist treatise page.
-        echo $wrap_before;
-        echo $home_link;
-        echo $sep . sprintf($link, tte_omeka_links('texts'), 'Texts', 0);
-
-        echo $sep .  sprintf($link, tte_omeka_build_entity_url($treatiseTextID, \TTE\OmekaMap::get('resourceTemplates', 'text')['id']), $heuristTextTitle, 0);
-
-        if (!empty($treatiseTitle)) {
-            echo $sep . $before . esc_html($treatiseTitle) . $after;
-        }
-    } else if ($isPersonPage) {
-        // Generate breadcrumbs for Heurist text page.
-        echo $wrap_before;
-        echo $home_link;
-        echo $sep . sprintf($link, tte_omeka_links('persons'), 'Persons', 0);
-        if (!empty($heuristPersonTitle)) {
-            echo $sep . $before . esc_html($heuristPersonTitle) . $after;
-        }
-    } else if ($isEventPage) {
-        // Generate breadcrumbs for Heurist text page.
-        echo $wrap_before;
-        echo $home_link;
-        if (!empty($eventTitle)) {
-            echo $sep . '<span><a class="breadcrumbs__link" href="/category/events/" itemprop="item"><span itemprop="name">Events</span></a><meta itemprop="position" content="0"></span> <span class="breadcrumbs__separator delimiter"> &gt; </span> ' .
-                '<span class="breadcrumbs__current">' .  esc_html($eventTitle)  . '</span>'
-                . $after;
-        }
-    } else if (is_home() || is_front_page()) {
-        if ($show_on_home) echo $wrap_before . $home_link . $wrap_after;
-    } else {
-        $position = 0;
-
-        echo $wrap_before;
-
-        if ($show_home_link) {
-            $position += 1;
-            echo $home_link;
-        }
-
-        if (is_category()) {
-            $parents = get_ancestors(get_query_var('cat'), 'category');
-            foreach (array_reverse($parents) as $cat) {
-                $position += 1;
-                if ($position > 1) {
-                    echo $sep;
-                }
-                echo sprintf($link, get_category_link($cat), get_cat_name($cat), $position);
-            }
-            if (get_query_var('paged')) {
-                $position += 1;
-                $cat      = get_query_var('cat');
-                echo $sep . sprintf($link, get_category_link($cat), get_cat_name($cat), $position);
-                echo $sep . $before . sprintf($text['page'], get_query_var('paged')) . $after;
-            } else {
-                if ($show_current) {
-                    if ($position >= 1) {
-                        echo $sep;
-                    }
-                    echo $before . sprintf($text['category'], single_cat_title('', false)) . $after;
-                } elseif ($show_last_sep) {
-                    echo $sep;
-                }
-            }
-        } elseif (is_search()) {
-            if ($show_home_link && $show_current || !$show_current && $show_last_sep) {
-                echo $sep;
-            }
-            if ($show_current) {
-                echo $before . sprintf($text['search'], get_search_query()) . $after;
-            }
-        } elseif (is_year()) {
-            if ($show_home_link && $show_current) {
-                echo $sep;
-            }
-            if ($show_current) {
-                echo $before . get_the_time('Y') . $after;
-            } elseif ($show_home_link && $show_last_sep) {
-                echo $sep;
-            }
-        } elseif (is_month()) {
-            if ($show_home_link) {
-                echo $sep;
-            }
-            $position += 1;
-            echo sprintf($link, get_year_link(get_the_time('Y')), get_the_time('Y'), $position);
-            if ($show_current) {
-                echo $sep . $before . get_the_time('F') . $after;
-            } elseif ($show_last_sep) {
-                echo $sep;
-            }
-        } elseif (is_day()) {
-            if ($show_home_link) {
-                echo $sep;
-            }
-            $position += 1;
-            echo sprintf($link, get_year_link(get_the_time('Y')), get_the_time('Y'), $position) . $sep;
-            $position += 1;
-            echo sprintf($link, get_month_link(get_the_time('Y'), get_the_time('m')), get_the_time('F'), $position);
-            if ($show_current) {
-                echo $sep . $before . get_the_time('d') . $after;
-            } elseif ($show_last_sep) {
-                echo $sep;
-            }
-        } elseif (is_attachment()) {
-            $parent    = get_post($parent_id);
-            $cat       = get_the_category($parent->ID);
-            $catID     = $cat[0]->cat_ID;
-            $parents   = get_ancestors($catID, 'category');
-            $parents   = array_reverse($parents);
-            $parents[] = $catID;
-            foreach ($parents as $cat) {
-                $position += 1;
-                if ($position > 1) {
-                    echo $sep;
-                }
-                echo sprintf($link, get_category_link($cat), get_cat_name($cat), $position);
-            }
-            $position += 1;
-            echo $sep . sprintf($link, get_permalink($parent), $parent->post_title, $position);
-            if ($show_current) {
-                echo $sep . $before . get_the_title() . $after;
-            } elseif ($show_last_sep) {
-                echo $sep;
-            }
-        } elseif (is_page() && !$parent_id) {
-            if ($show_home_link && $show_current) {
-                echo $sep;
-            }
-            if ($show_current) {
-                echo $before . get_the_title() . $after;
-            } elseif ($show_home_link && $show_last_sep) {
-                echo $sep;
-            }
-        } elseif (is_page() && $parent_id) {
-            $parents = get_post_ancestors(get_the_ID());
-            foreach (array_reverse($parents) as $pageID) {
-                $position += 1;
-                if ($position > 1) {
-                    echo $sep;
-                }
-                echo sprintf($link, get_page_link($pageID), get_the_title($pageID), $position);
-            }
-            if ($show_current) {
-                echo $sep . $before . get_the_title() . $after;
-            } elseif ($show_last_sep) {
-                echo $sep;
-            }
-        } elseif (is_tag()) {
-            if (get_query_var('paged')) {
-                $position += 1;
-                $tagID    = get_query_var('tag_id');
-                echo $sep . sprintf($link, get_tag_link($tagID), single_tag_title('', false), $position);
-                echo $sep . $before . sprintf($text['page'], get_query_var('paged')) . $after;
-            } else {
-                if ($show_home_link && $show_current) {
-                    echo $sep;
-                }
-                if ($show_current) {
-                    echo $before . sprintf($text['tag'], single_tag_title('', false)) . $after;
-                } elseif ($show_home_link && $show_last_sep) {
-                    echo $sep;
-                }
-            }
-        } elseif (is_tax()) {
-            if ($show_home_link && $show_current) {
-                echo $sep;
-            }
-            if ($show_current) {
-                echo $before . single_term_title('', false) . $after;
-            }
-        } elseif (is_author()) {
-            $author = get_userdata(get_query_var('author'));
-            if (get_query_var('paged')) {
-                $position += 1;
-                echo $sep . sprintf($link, get_author_posts_url($author->ID), sprintf($text['author'], $author->display_name), $position);
-                echo $sep . $before . sprintf($text['page'], get_query_var('paged')) . $after;
-            } else {
-                if ($show_home_link && $show_current) {
-                    echo $sep;
-                }
-                if ($show_current) {
-                    echo $before . sprintf($text['author'], $author->display_name) . $after;
-                } elseif ($show_home_link && $show_last_sep) {
-                    echo $sep;
-                }
-            }
-        } elseif (is_404()) {
-            if ($show_home_link && $show_current) {
-                echo $sep;
-            }
-            if ($show_current) {
-                echo $before . $text['404'] . $after;
-            } elseif ($show_last_sep) {
-                echo $sep;
-            }
-        } elseif (has_post_format() && !is_singular()) {
-            if ($show_home_link && $show_current) {
-                echo $sep;
-            }
-            echo get_post_format_string(get_post_format());
-        }
-
-        echo $wrap_after;
-    }
-}
-
 
 // Get all searched entities based on the search query and base parameters.
 function tte_omeka_get_all_searched_entities($hq, $baseParams)
@@ -1223,4 +696,111 @@ function tte_omeka_get_sigma_node_graph($entities)
         'legendMap' => $legendMap,
     ];
     return $res;
+}
+
+
+
+function tte_omeka_check_whether_entity_is_featured($entity_id)
+{
+    global $wpdb;
+
+    $id = (int) $entity_id;
+    if ($id <= 0) {
+        return false;
+    }
+
+    $table  = $wpdb->prefix . 'featured_records';
+    $exists = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT EXISTS(SELECT 1 FROM {$table} WHERE entity_id = %d)",
+            $id
+        )
+    );
+
+    return (bool) $exists; // returns true/false
+}
+
+
+/**
+ * AJAX: Add or remove a entity_id in the featured_records table.
+ * Expects:
+ *  - action_type: 'add' | 'remove'
+ *  - entity_id: integer
+ */
+function tte_omeka_ajax_update_featured_record()
+{
+    if (!current_user_can('edit_posts')) {
+        wp_send_json_error(['message' => 'You do not have permission to perform this action.'], 403);
+    }
+
+    check_ajax_referer('tte_update_featured_record', 'nonce');
+
+    // Validate inputs
+    $action_type = isset($_POST['action_type']) ? sanitize_key($_POST['action_type']) : '';
+    $entity_id  = isset($_POST['entity_id']) ? intval($_POST['entity_id']) : 0;
+
+    if (!in_array($action_type, ['add', 'remove'], true)) {
+        wp_send_json_error(['message' => 'Invalid action_type. Use "add" or "remove".'], 400);
+    }
+    if ($entity_id <= 0) {
+        wp_send_json_error(['message' => 'Invalid entity_id.'], 400);
+    }
+
+    global $wpdb;
+    $table = $wpdb->prefix . 'featured_records';
+
+    if ($action_type === 'add') {
+        // Avoid duplicates (table doesn’t have a UNIQUE index on entity_id)
+        $exists = $wpdb->get_var(
+            $wpdb->prepare("SELECT id FROM {$table} WHERE entity_id = %d LIMIT 1", $entity_id)
+        );
+
+        if ($exists) {
+            wp_send_json_success(['message' => 'Record already featured.', 'status' => 'exists', 'entity_id' => $entity_id]);
+        }
+
+        $ok = $wpdb->insert($table, ['entity_id' => $entity_id], ['%d']);
+        if ($ok === false) {
+            wp_send_json_error(['message' => 'Database insert failed.'], 500);
+        }
+
+        wp_send_json_success(['message' => 'Record featured successfully.', 'status' => 'added', 'entity_id' => $entity_id]);
+    }
+
+    // action_type === 'remove'
+    $deleted = $wpdb->delete($table, ['entity_id' => $entity_id], ['%d']);
+    if ($deleted === false) {
+        wp_send_json_error(['message' => 'Database delete failed.'], 500);
+    }
+
+    // If 0 rows affected, it just wasn’t there—still a success for idempotency
+    wp_send_json_success([
+        'message'    => $deleted ? 'Record unfeatured successfully.' : 'Record was not featured.',
+        'status'     => $deleted ? 'removed' : 'not_found',
+        'entity_id' => $entity_id
+    ]);
+}
+add_action('wp_ajax_tte_update_featured_record', 'tte_omeka_ajax_update_featured_record');
+
+
+
+function tte_omeka_get_all_featured_entities()
+{
+    global $wpdb;
+    $table = $wpdb->prefix . 'featured_records';
+    $results = $wpdb->get_col("SELECT entity_id FROM {$table}");
+    $featured_ids = array_map('intval', $results);
+
+    if (empty($featured_ids)) {
+        return [];
+    }
+
+    $query = [
+        'id' => implode(',', $featured_ids),
+        'per_page' => count($featured_ids),
+        'is_public' => 1
+    ];
+
+    $featuredEntities = \TTE\OmekaEntity::search($query, true)['entities'];
+    return $featuredEntities;
 }

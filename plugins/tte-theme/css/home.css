@@ -1,0 +1,80 @@
+/* Carousel styles used only on the TTE homepage. */
+#carousel-featured {
+    position: relative;
+    width: 100%;
+}
+
+.wp-block-post-title {
+    display: none;
+}
+
+#carousel-featured,
+#carousel-featured * {
+    box-sizing: border-box;
+}
+
+#carousel-featured .mySlidesFeatured {
+    width: 100%;
+}
+
+#carousel-featured .slideshow-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: auto;
+    padding-inline: 3%;
+}
+
+#carousel-featured .prev,
+#carousel-featured .next {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    width: auto;
+    padding: 12px;
+    color: #fff;
+    background: rgb(0 0 0 / 45%);
+    border-radius: 0 3px 3px 0;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    transform: translateY(-50%);
+    transition: background-color 0.2s ease;
+}
+
+#carousel-featured .prev {
+    left: 0;
+}
+
+#carousel-featured .next {
+    right: 0;
+    border-radius: 3px 0 0 3px;
+}
+
+#carousel-featured .prev:hover,
+#carousel-featured .next:hover {
+    background: rgb(0 0 0 / 80%);
+}
+
+#carousel-featured .dot {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-inline: 2px;
+    background: #bbb;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#carousel-featured .dot.active,
+#carousel-featured .dot:hover {
+    background: #555;
+}
+
+#carousel-featured #arrow {
+    font-size: 3rem;
+    line-height: 0.75;
+}

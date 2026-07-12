@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 2,
+  "name": "omee-home-block/feature",
+  "version": "1.1.0",
+  "title": "TTE Home page block",
+  "category": "omee-home-block",
+  "icon": "admin-page",
+  "description": "",
+  "supports": {
+    "html": false,
+    "color": {
+      "background": true
+    },
+    "typography": {
+      "fontSize": true
+    }
+  },
+  "textdomain": "omee-home-block",
+  "editorScript": "file:./index.js",
+  "editorStyle": "file:./index.css",
+  "style": "file:./style-index.css"
+}

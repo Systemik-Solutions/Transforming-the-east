@@ -3,7 +3,7 @@
 /**
  * Plugin Name:       TTE-OMEKA Project
  * Description:       Plugin for TTE site
- * Version:           1.0
+ * Version: 1.1.0
  * Author:            Systemik Solutions
  */
 
@@ -231,3 +231,23 @@ function tte_omeka_clear_cache_callback()
     </div>
 <?php
 }
+
+
+function tte_omeka_create_featured_record_table()
+{
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'featured_records';
+    $charset_collate = $wpdb->get_charset_collate();
+
+    if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        $sql = "CREATE TABLE $table_name (
+            id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+            entity_id BIGINT(20) UNSIGNED NOT NULL,
+            PRIMARY KEY (id)
+        ) $charset_collate;";
+
+        require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+        dbDelta($sql);
+    }
+}
+add_action('init', 'tte_omeka_create_featured_record_table');

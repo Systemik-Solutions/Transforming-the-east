@@ -170,7 +170,7 @@ class TTEIAWClient
     public function getImageSet($collectionId, $imageSetId)
     {
         $url = $this->baseUrl . '/collections/' . $collectionId . '/image-sets/' . $imageSetId;
-        return $this->get($url);
+    return $this->get($url);
     }
 
     public function publishCollection($collectionId)

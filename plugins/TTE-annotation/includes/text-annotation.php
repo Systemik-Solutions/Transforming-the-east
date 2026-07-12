@@ -34,6 +34,8 @@ usort($all_annotations, function ($a, $b) {
 $has_annotations = !empty($all_annotations);
 
 
+error_log(json_encode($all_annotations));
+
 $image_name = 0;
 ?>
 
@@ -100,15 +102,18 @@ $image_name = 0;
 
 <div class="row pt-4 pb-4" id="search-navigation" style="display: none;<?php echo $has_annotations ? '' : ' visibility: hidden;'; ?>">
 
-    <div style="display: flex; align-items:center">
-        <p class="mr-2" style="margin: 0" id="search-navigation-label">Search result</p>
-        <span class="icon icon-arrow-left-dark" id="search-navigation-prev" style="cursor: pointer;"></span>
-        <span class="icon icon-arrow-right-dark ml-2" id="search-navigation-next" style="cursor: pointer;"></span>
+    <div class="col d-flex">
+        <div style="display: flex; align-items:center">
+            <p class="mr-2" style="margin: 0" id="search-navigation-label">Search result</p>
+            <span class="icon icon-arrow-left-dark" id="search-navigation-prev" style="cursor: pointer;"></span>
+            <span class="icon icon-arrow-right-dark ml-2" id="search-navigation-next" style="cursor: pointer;"></span>
+        </div>
+
+        <div style="margin-left: 10px;">
+            <button id="annotation-show-search-result">Show all results</button>
+        </div>
     </div>
 
-    <div style="margin-left: 10px;">
-        <button id="annotation-show-search-result">Show all results</button>
-    </div>
 </div>
 
 
@@ -138,7 +143,7 @@ $image_name = 0;
                 <span class="icon icon-arrow-left-dark"></span>
                 Previous
             </div>
-            <p class="mb-0" id="page-number" style="font-weight: bold;"></p>
+            <p class="mb-0 mt-0" id="page-number" style="font-weight: bold;"></p>
             <div class="glycerine-viewer-next ml-2" style="display: flex; justify-content:center; align-items: center;cursor: pointer;">
                 Next
                 <span class="icon icon-arrow-right-dark"></span>
@@ -251,7 +256,7 @@ $image_name = 0;
                                                         echo '<div style="white-space: pre-wrap;">' . ($field['values']['en-Latn'][0] ?? '') . '</div>';
                                                         break;
                                                     } else if ($field['field']['name'] == 'Transcription' && isset($field['values']['en'])) {
-                                                        echo '<div style="white-space: pre-wrap;">' . ($field['values']['en'][0] ?? '') . '</div>';
+                                                        echo '<div class="text-annotation-transcription"  style="white-space: pre-wrap;">' . ($field['values']['en'][0] ?? '') . '</div>';
                                                         break;
                                                     }
                                                 }

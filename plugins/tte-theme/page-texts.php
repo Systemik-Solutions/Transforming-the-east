@@ -1,9 +1,3 @@
-<style>
-    .glycerine-table {
-        display: none;
-    }
-</style>
-
 <?php
 $textEntities = tte_omeka_get_all_searched_entities(null, [
     'resource_template_id' => [\TTE\OmekaMap::get('resourceTemplates', 'text')['id']],
@@ -19,8 +13,7 @@ $textEntities = tte_omeka_get_all_searched_entities(null, [
 
 ]);
 
-
-$texts = tte_omeka_create_text_tile_data($textEntities);
+$texts = tte_omeka_create_entity_tile_data($textEntities);
 
 
 $collectionIDs = [];
@@ -30,9 +23,6 @@ foreach ($texts as $text) {
     $clickUrlMap[$text['collectionID']] = $text['url'];
 }
 ?>
-
-<?php get_template_part('templates/page', 'header'); ?>
-
 
 <div class="page-content">
     <div class="container-fluid">
@@ -76,10 +66,20 @@ foreach ($texts as $text) {
                             style="cursor:pointer; background-color:<?php echo $bgColor; ?>"
                             data-panel="#texts-dropdown-<?php echo $text['id']; ?>">
                             <div class="tile-title">
-                                <a href=<?php echo $text['url'] ?> target="_self">
+                                <a href="<?php echo esc_url($text['url']); ?>" target="_self">
                                     <?php echo empty($text['title']) ? '&nbsp;' : esc_html($text['title']); ?>
                                 </a>
                             </div>
+
+                            <?php if (!empty($text['author'])): ?>
+                                <div class="tile-info"> <?php echo esc_html(implode(' , ', $text['author'])); ?></div>
+                            <?php endif; ?>
+
+
+                            <?php if (!empty($text['date'])): ?>
+                                <div class="tile-info"> <?php echo esc_html(implode(' , ', $text['date'])); ?></div>
+                            <?php endif; ?>
+
                         </div>
                     <?php endforeach; ?>
                 </div>

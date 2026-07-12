@@ -6,8 +6,8 @@ if (!isset($translation)) {
     global $wp_query;
     $wp_query->set_404();
     status_header(404);
-    get_template_part(404);
-    exit();
+    echo '<p>' . esc_html__('Translation not found.', 'tte-theme') . '</p>';
+    return;
 }
 
 //Add linked media from related translations
@@ -36,20 +36,25 @@ if (mb_strlen($translationTitle) > $maxLength) {
     $titleDisplay = mb_substr($translationTitle, 0, $maxLength) . '...';
 }
 
-get_template_part('templates/breadcrumbs', '', [
-    'isHeuristTranslationPage' => true,
-    'heuristTranslationPageTitle' => $titleDisplay,
-    'isClassicalSourceWorkPage' => false,
-    'heuristclassicalSourceWorkTitle' => null,
-]);
 ?>
 
-<div id="content" class="site-content" role="document">
-    <div class="content-wrap">
-        <main class="main">
             <div class="single-header">
                 <div class="container-fluid">
-                    <h2 class="single-title"><?php echo esc_html($translationTitle) ?></h2>
+
+                    <div class="d-flex">
+                        <h1 class="single-title mb-0 pr-5 mt-0"><?php echo esc_html($translationTitle) ?></h2>
+                        <!-- If user login with admin or curator, show the checkbox -->
+                        <?php if (current_user_can('edit_posts')) : ?>
+                            <div class="vertical-center">
+                                <input type="checkbox"
+                                    id="markAsFeatured"
+                                    data-entity-id="<?php echo esc_attr($translationID); ?>"
+                                    style="margin-right:5px;"
+                                    <?php checked(tte_omeka_check_whether_entity_is_featured($translationID)); ?> />
+                                Feature record on homepage
+                            </div>
+                        <?php endif; ?>
+                    </div>
 
                     <?php
                     if (isset($linkedTextID)) {
@@ -62,7 +67,7 @@ get_template_part('templates/breadcrumbs', '', [
 
                 </div>
             </div>
-            <div class="single-content">
+            <div class="single-content pt-3">
                 <div class="container-fluid">
                     <ul class="nav nav-tabs" id="textPageTab" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -152,7 +157,7 @@ get_template_part('templates/breadcrumbs', '', [
                         <!-- Reader Tab -->
                         <?php if ($hasReaderTab) : ?>
                             <div class="tab-pane textus-tab-pane fade" id="reader" role="tabpanel" aria-labelledby="readerTab">
-                               
+
                                 <?php if (
                                     !empty($translation->getProperty('field_schema_url')) || !empty($translation->getThumbnailImageUrl())
                                 ) : ?>
@@ -219,6 +224,41 @@ get_template_part('templates/breadcrumbs', '', [
                             </div>
                         <?php endif; ?>
                     </div>
-        </main><!-- /.main -->
-    </div><!-- /.content-wrap -->
-</div>
+
+
+<script>
+    var ajaxurl = tteTheme.ajaxUrl;
+    // Handle "Mark as Featured" checkbox change
+    $('#markAsFeatured').on('change', function(e) {
+        const $cb = $(this);
+        const entityID = $cb.data('entity-id');
+        const shouldAdd = $cb.is(':checked');
+        const actionType = shouldAdd ? 'add' : 'remove';
+
+        if (!entityID) {
+            alert('Missing entity id.');
+            $cb.prop('checked', !shouldAdd); // revert
+            return;
+        }
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'tte_update_featured_record',
+                nonce: tteTheme.featuredNonce,
+                action_type: actionType,
+                entity_id: entityID
+            },
+            success: function(response) {},
+            error: function(jqXHR) {
+                try {
+                    const err = JSON.parse(jqXHR.responseText);
+                    alert(err.message || err.data?.message || 'Request failed.');
+                } catch (e) {
+                    console.error('Unexpected error', jqXHR.responseText);
+                    alert('Unexpected error occurred. Please refresh the page and try again.');
+                }
+            }
+        });
+    });
+</script>

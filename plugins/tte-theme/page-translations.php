@@ -1,10 +1,8 @@
 <?php
-$currentURL = $_SERVER['HTTP_HOST'];
-
 $recResourceTemplateIDs = [
     \TTE\OmekaMap::get('resourceTemplates', 'translation')['id']
 ];
-$itemsPerPage = isset($_GET['nr']) ? $_GET['nr'] : '40';
+$itemsPerPage = isset($_GET['nr']) ? max(1, min(100, absint($_GET['nr']))) : 40;
 $pageNum = empty($_GET['cp']) ? 1 : intval($_GET['cp']);
 
 // Perform search
@@ -33,7 +31,7 @@ $allOmekaEntities  = \TTE\OmekaEntity::search([
 
 
 // Build sigma js data
-$allSearchEntities = tte_omeka_get_all_searched_entities($_GET['hq'], [
+$allSearchEntities = tte_omeka_get_all_searched_entities($_GET['hq'] ?? null, [
     'resource_template_id' => $recResourceTemplateIDs,
     'per_page' => 10000,
 ]);
@@ -49,8 +47,6 @@ $allOtherEntities = tte_omeka_get_all_searched_entities(null, [
 $sigmaEntities = array_merge($allSearchEntities, $allOtherEntities);
 $sigmaGraph = tte_omeka_get_sigma_node_graph($sigmaEntities);
 ?>
-
-<?php get_template_part('templates/page', 'header'); ?>
 
 <div class="page-content">
     <div class="container-fluid">
@@ -170,15 +166,15 @@ $sigmaGraph = tte_omeka_get_sigma_node_graph($sigmaEntities);
 
         <div class="block-view" style="display: none;">
             <?php
-            get_template_part('templates/list', 'translation', [
-                'translation' => tte_omeka_create_translation_tile_data($omekaEntities),
+            tte_omeka_plugin_get_template_part('list', 'entities', [
+                'entities' => tte_omeka_create_entity_tile_data($omekaEntities),
             ]);
             ?>
             <div id="pagination" class="horizontal-center"></div>
         </div>
 
         <?php
-        $apiBase = "https://$currentURL/wp-json/tte-omeka-api/v1/omeka-geojson";
+        $apiBase = rest_url('tte-omeka-api/v1/omeka-geojson');
 
         $hqPart = '';
         if (isset($_GET['hq']) && $_GET['hq'] !== '') {
@@ -215,10 +211,10 @@ $sigmaGraph = tte_omeka_get_sigma_node_graph($sigmaEntities);
         <div class="network-view" style="display: none;">
             <div id="network-container">
                 <div id="network-controls">
-                    <button id="network-fullscreen" class="network-button" style=" background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/full-screen.svg');"></button>
-                    <button id="network-zoomIn" class="network-button" style=" background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/zoom-in.svg');"></button>
-                    <button id="network-zoomOut" class="network-button" style=" background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/zoom-out.svg');"></button>
-                    <button id="network-fitScreen" class="network-button" style=" background-image: url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/show-graph.svg'); background-size: 40% 40%; background-position: center center; background-repeat: no-repeat;"></button>
+                    <button id="network-fullscreen" class="network-button" style=" background-image: url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/full-screen.svg'); ?>');"></button>
+                    <button id="network-zoomIn" class="network-button" style=" background-image: url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/zoom-in.svg'); ?>');"></button>
+                    <button id="network-zoomOut" class="network-button" style=" background-image: url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/zoom-out.svg'); ?>');"></button>
+                    <button id="network-fitScreen" class="network-button" style=" background-image: url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/show-graph.svg'); ?>'); background-size: 40% 40%; background-position: center center; background-repeat: no-repeat;"></button>
                 </div>
                 <div id="legendDiv"></div>
                 <div id="network-tooltip"></div>
@@ -305,13 +301,15 @@ $sigmaGraph = tte_omeka_get_sigma_node_graph($sigmaEntities);
         return renderer;
     })();
 
-    urls = ['<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/person.svg', '<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/place.svg', '<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/book.svg', '<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/newspaper.svg', '<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/translation.svg'];
+    urls = <?php echo wp_json_encode(array_map(static function ($icon) {
+        return TTE_THEME_PLUGIN_URL . 'image/sigma.js/' . $icon;
+    }, ['person.svg', 'place.svg', 'book.svg', 'newspaper.svg', 'translation.svg']), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     loaded = 0;
 
     // Convert PHP array to JavaScript
-    var nodes = <?php echo json_encode($sigmaGraph['nodes']); ?>;
-    var edges = <?php echo json_encode($sigmaGraph['edges']); ?>;
-    var legendMap = <?php echo json_encode($sigmaGraph['legendMap']); ?>;
+    var nodes = <?php echo wp_json_encode($sigmaGraph['nodes'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    var edges = <?php echo wp_json_encode($sigmaGraph['edges'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
+    var legendMap = <?php echo wp_json_encode($sigmaGraph['legendMap'], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
     // Wait for all images to be loaded before instanciating sigma:
     urls.forEach(function(url) {
@@ -438,10 +436,10 @@ $sigmaGraph = tte_omeka_get_sigma_node_graph($sigmaEntities);
                     var elem = document.getElementById('network-container');
                     if (!document.fullscreenElement) {
                         elem.requestFullscreen();
-                        document.getElementById('network-fullscreen').style.backgroundImage = "url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/exit-full-screen.svg')";
+                        document.getElementById('network-fullscreen').style.backgroundImage = "url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/exit-full-screen.svg'); ?>')";
                     } else {
                         document.exitFullscreen();
-                        document.getElementById('network-fullscreen').style.backgroundImage = "url('<?php echo get_stylesheet_directory_uri(); ?>/image/sigma.js/full-screen.svg')";
+                        document.getElementById('network-fullscreen').style.backgroundImage = "url('<?php echo esc_url(TTE_THEME_PLUGIN_URL . 'image/sigma.js/full-screen.svg'); ?>')";
                     }
                 });
 
@@ -522,22 +520,13 @@ $sigmaGraph = tte_omeka_get_sigma_node_graph($sigmaEntities);
     // Function to show tooltip
     function showTooltip(node) {
         var tooltip = document.getElementById('network-tooltip');
-        tooltip.innerHTML = ''
-        if (node.name != null) {
-            tooltip.innerHTML += '<p>' + node.fullName + '</p>'; // Update tooltip content
-        }
-        if (node.year != null) {
-            tooltip.innerHTML += '<p>' + node.year + '</p>'; // Update tooltip content
-        }
-        if (node.language != null) {
-            tooltip.innerHTML += '<p>' + node.language + '</p>'; // Update tooltip content
-        }
-        if (node.bookType != null) {
-            tooltip.innerHTML += '<p>' + node.bookType + '</p>'; // Update tooltip content
-        }
-        if (node.translator != null) {
-            tooltip.innerHTML += '<p>' + node.translator + '</p>'; // Update tooltip content
-        }
+        tooltip.replaceChildren();
+        [node.fullName, node.year, node.language, node.bookType, node.translator].forEach(function(value) {
+            if (value == null || value === '') return;
+            var paragraph = document.createElement('p');
+            paragraph.textContent = value;
+            tooltip.appendChild(paragraph);
+        });
 
         tooltip.style.display = 'block'; // Show tooltip
     }

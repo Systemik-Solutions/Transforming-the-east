@@ -4,7 +4,7 @@ require_once('TTEIAWClient.php');
 /**
  * Plugin Name: TTE Annotation
  * Description: Provides Glycerine viewer and annotation for Transforming the East site.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Systemik Solutions
  * Author URI: https://www.systemiksolutions.com/
  * Contributors: systemiksolutions, mufengniu
@@ -87,11 +87,26 @@ add_action('wp_enqueue_scripts', 'tte_annotation_enqueue_assets');
 
 function tte_annotation_register_text_annotation_block()
 {
+    $script_path = plugin_dir_path(__FILE__) . 'build/glycerine-text-annotation.js';
+    $asset_path = plugin_dir_path(__FILE__) . 'build/glycerine-text-annotation.asset.php';
+
+    if (!file_exists($script_path)) {
+        return;
+    }
+
+    $asset = file_exists($asset_path)
+        ? require $asset_path
+        : array(
+            'dependencies' => array('wp-blocks', 'wp-editor', 'wp-components', 'wp-element', 'wp-i18n'),
+            'version' => filemtime($script_path),
+        );
+
     wp_register_script(
         'glycerine-text-annotation-block-js',
         plugin_dir_url(__FILE__) . 'build/glycerine-text-annotation.js',
-        array('wp-blocks', 'wp-editor', 'wp-components', 'wp-element', 'wp-i18n'),
-        filemtime(plugin_dir_path(__FILE__) . 'build/glycerine-text-annotation.js')
+        $asset['dependencies'],
+        $asset['version'],
+        true
     );
 
     register_block_type('glycerine/text-annotation', array(

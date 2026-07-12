@@ -30,9 +30,6 @@ class OmekaGeoJsonController extends WP_REST_Controller
     /**
      * Controller method of sending request to Heurist.
      * 
-     * Current it support two types of map: cluster and timeLine.
-     * Parameter is required when sending this rest api. eg: /wp-json/omaa-api/v1/heurist-geo-json?type=cluster will get the map data for cluster map.
-     * /wp-json/omaa-api/v1/heurist-geo-json?type=timeLine will get the timeLine map data.
      *
      * @param WP_REST_Request $request
      *   The request parameters must contain the following:

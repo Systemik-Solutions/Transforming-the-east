@@ -13,6 +13,9 @@ class OmekaEntity
      */
     public function __construct(array $rawData)
     {
+        if (!array_key_exists('o:id', $rawData)) {
+            throw new \InvalidArgumentException('Omeka item data must contain an o:id value.');
+        }
 
         $this->properties['rec_ID'] = $rawData['o:id'];
         $this->properties['rec_Title'] = $rawData['o:title'] ?? '';
@@ -101,7 +104,14 @@ class OmekaEntity
         );
 
         $result = $omekaClient->getById('items', $id);
-        return $result ? new static($result) : null;
+
+        // Omeka returns a JSON error object for missing/private items. Do not
+        // pass that response to the entity constructor as though it were an item.
+        if (!is_array($result) || !array_key_exists('o:id', $result)) {
+            return null;
+        }
+
+        return new static($result);
     }
 
     public function getRelatedEntities()
@@ -165,10 +175,14 @@ class OmekaEntity
 
         if (!$result || !isset($result['items'])) return ['items' => [], 'total' => 0];
 
+        $items = array_filter($result['items'] ?? [], function ($item) {
+            return is_array($item) && array_key_exists('o:id', $item);
+        });
+
         return [
             'entities' => array_map(function ($item) {
                 return new static($item);
-            }, $result['items'] ?? []),
+            }, array_values($items)),
             'total' => $result['total'] ?? 0
         ];
     }

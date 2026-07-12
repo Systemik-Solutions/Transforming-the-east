@@ -6,8 +6,8 @@ if ($text == null) {
     global $wp_query;
     $wp_query->set_404();
     status_header(404);
-    get_template_part(404);
-    exit();
+    echo '<p>' . esc_html__('Text not found.', 'tte-theme') . '</p>';
+    return;
 }
 $properties = $text->getProperties();
 
@@ -31,23 +31,6 @@ $translationID = null;
 if (!empty($text->getProperty('field_te_dbprinttext'))) {
     $translationID = $text->getProperty('field_te_dbprinttext')[0]['value_resource_id'];
 }
-
-
-get_template_part('templates/breadcrumbs', '', [
-    'isHeuristTranslationPage' => false,
-    'heuristTranslationPageTitle' => null,
-    'isClassicalSourceWorkPage' => false,
-    'heuristclassicalSourceWorkTitle' => null,
-    'isTextPage' => false,
-    'heuristTextTitle' => $text->getTitle(),
-    'isPersonPage' => false,
-    'heuristPersonName' => null,
-    'isEventPage' => false,
-    'heuristEventTitle' => null,
-    'isTreatisePage' => true,
-    'treatiseTitle' => $treatiseName,
-    'treatiseTextID' => $textID
-]);
 
 
 ?>
@@ -99,13 +82,3 @@ get_template_part('templates/breadcrumbs', '', [
         </div>
     </div>
 </div>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
-<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-
-<style>
-    button {
-        cursor: pointer;
-    }
-</style>

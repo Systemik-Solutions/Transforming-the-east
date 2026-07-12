@@ -14,7 +14,7 @@ class OmekaMap
                 'id' => '15',
                 'color' => '#393A3B',
                 'slug' => 'classical-source-work/',
-                'name' => 'Classical Source Work',
+                'name' => 'Classics',
             ],
             'classicalSourceWorkSection' => [
                 'id' => '16',
@@ -24,7 +24,7 @@ class OmekaMap
             ],
             'translation' => [
                 'id' => '18',
-                'color' => '#D45135',
+                'color' => '#393A3B',
                 'slug' => 'translation/',
                 'name' => 'Translation',
             ],
@@ -68,7 +68,7 @@ class OmekaMap
                 'id' => '25',
                 'color' => '#87B38D',
                 'slug' => 'story/',
-                'name' => 'Story',
+                'name' => 'StoryMap',
             ],
         ],
         'propertyIDs' => [

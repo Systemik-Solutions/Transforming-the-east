@@ -77,4 +77,22 @@ class OmekaVocabulary
 
         return $all;
     }
+
+    public static function getAllEntities($enableCache = false)
+    {
+        // Omeka record type IDs.
+        $recResourceTemplateIDs = [
+            \TTE\OmekaMap::get('resourceTemplates', 'translation')['id'],
+            \TTE\OmekaMap::get('resourceTemplates', 'person')['id'],
+            \TTE\OmekaMap::get('resourceTemplates', 'place')['id'],
+            \TTE\OmekaMap::get('resourceTemplates', 'classicalSourceWork')['id']
+        ];
+
+        $entities = OmekaSearch::searchEntities([
+            'resource_template_id' =>  $recResourceTemplateIDs,
+            'per_page' => 10000,
+        ], $enableCache);
+
+        return $entities['entities'];
+    }
 }

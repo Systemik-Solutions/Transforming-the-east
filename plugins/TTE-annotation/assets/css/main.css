@@ -46,10 +46,12 @@
     gap: 3px;
 }
 
-#annotation-table {
+.text-annotation-transcription {
     --base-font: 16px;
     font-size: var(--base-font);
 }
+
+
 
 #annotation-table p {
     font-size: 1em;
