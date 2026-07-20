@@ -33,10 +33,47 @@ usort($all_annotations, function ($a, $b) {
 
 $has_annotations = !empty($all_annotations);
 
-
-error_log(json_encode($all_annotations));
-
 $image_name = 0;
+
+$transcription_language_labels = [
+    'en-Latn' => 'Latin',
+    'en' => 'English',
+    'zh_CN' => 'Chinese (Simplified)',
+    'zh-Hans' => 'Chinese (Simplified)',
+    'zh-Hant' => 'Chinese (Traditional)',
+];
+$transcription_languages = [];
+
+foreach ($all_annotations as $annotation) {
+    foreach (($annotation['fields'] ?? []) as $field) {
+        if (($field['field']['name'] ?? '') !== 'Transcription') {
+            continue;
+        }
+
+        foreach (($field['values'] ?? []) as $language => $values) {
+            $values = is_array($values) ? $values : [$values];
+            $has_value = array_filter($values, static function ($value) {
+                return is_string($value)
+                    && trim(wp_strip_all_tags($value)) !== '';
+            });
+
+            if (!empty($has_value)) {
+                $transcription_languages[$language] = true;
+            }
+        }
+    }
+}
+
+$transcription_languages = array_keys($transcription_languages);
+$transcription_language_priority = ['en-Latn' => 0, 'en' => 1];
+usort($transcription_languages, static function ($left, $right) use ($transcription_language_priority) {
+    $left_priority = $transcription_language_priority[$left] ?? 2;
+    $right_priority = $transcription_language_priority[$right] ?? 2;
+
+    return $left_priority === $right_priority
+        ? strcasecmp($left, $right)
+        : $left_priority <=> $right_priority;
+});
 ?>
 
 
@@ -128,11 +165,6 @@ $image_name = 0;
     <input type="hidden" id="tte_glycerine_manifest_url" value="<?php echo $imageSet_manifest_url; ?>">
     <input type="hidden" id="annotation-image-width" value="<?php echo $imageQuality; ?>">
 
-
-
-
-
-
     <div id="glycerine-toggle-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
         <div id="toggle-viewer" style="display: flex; cursor: pointer; align-items: center;">
             <p class="mr-2" style="margin: 0; font-weight:bold">Hide Facsimile</p>
@@ -186,14 +218,29 @@ $image_name = 0;
                                         ?>
                                     <?php endif; ?>
 
-                                    <div style="display: flex; justify-content:center; align-items: center; cursor: pointer;">
-                                        <div class="cssCircle minusSign" id="annotation-table-decrease-font-size">
-                                            &#8211;
+                                    <?php if ($selected_column === 'Transcription') : ?>
+                                        <div class="annotation-transcription-toolbar">
+                                            <div id="annotation-transcription-language-control" class="annotation-transcription-language-control" <?php echo count($transcription_languages) > 1 ? '' : 'hidden'; ?>>
+                                                <label for="annotation-transcription-language">Language</label>
+                                                <select id="annotation-transcription-language">
+                                                    <?php foreach ($transcription_languages as $language) : ?>
+                                                        <option value="<?php echo esc_attr($language); ?>">
+                                                            <?php echo esc_html($transcription_language_labels[$language] ?? str_replace(['_', '-'], ' ', $language)); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+
+                                            <div class="annotation-transcription-font-controls">
+                                                <div class="cssCircle minusSign" id="annotation-table-decrease-font-size">
+                                                    &#8211;
+                                                </div>
+                                                <div class="cssCircle plusSign" id="annotation-table-increase-font-size">
+                                                    &#43;
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="cssCircle plusSign" id="annotation-table-increase-font-size" style="margin-left: 5px;">
-                                            &#43;
-                                        </div>
-                                    </div>
+                                    <?php endif; ?>
                                 </th>
                             <?php endforeach; ?>
                         </tr>
@@ -251,14 +298,48 @@ $image_name = 0;
                                                 }
                                                 break;
                                             case 'Transcription':
-                                                foreach ($annotation['fields'] as $field) {
-                                                    if ($field['field']['name'] == 'Transcription' && isset($field['values']['en-Latn'])) {
-                                                        echo '<div style="white-space: pre-wrap;">' . ($field['values']['en-Latn'][0] ?? '') . '</div>';
-                                                        break;
-                                                    } else if ($field['field']['name'] == 'Transcription' && isset($field['values']['en'])) {
-                                                        echo '<div class="text-annotation-transcription"  style="white-space: pre-wrap;">' . ($field['values']['en'][0] ?? '') . '</div>';
-                                                        break;
+                                                foreach (($annotation['fields'] ?? []) as $field) {
+                                                    if (($field['field']['name'] ?? '') !== 'Transcription') {
+                                                        continue;
                                                     }
+
+                                                    $transcription_values = $field['values'] ?? [];
+                                                    $annotation_languages = array_keys($transcription_values);
+                                                    usort($annotation_languages, static function ($left, $right) use ($transcription_language_priority) {
+                                                        $left_priority = $transcription_language_priority[$left] ?? 2;
+                                                        $right_priority = $transcription_language_priority[$right] ?? 2;
+
+                                                        return $left_priority === $right_priority
+                                                            ? strcasecmp($left, $right)
+                                                            : $left_priority <=> $right_priority;
+                                                    });
+
+                                                    echo '<div class="text-annotation-transcriptions">';
+                                                    $rendered_language_count = 0;
+
+                                                    foreach ($annotation_languages as $language) {
+                                                        $values = $transcription_values[$language];
+                                                        $values = is_array($values) ? $values : [$values];
+                                                        $values = array_values(array_filter($values, static function ($value) {
+                                                            return is_string($value)
+                                                                && trim(wp_strip_all_tags($value)) !== '';
+                                                        }));
+
+                                                        if (empty($values)) {
+                                                            continue;
+                                                        }
+
+                                                        $is_hidden = $rendered_language_count > 0 ? ' hidden' : '';
+                                                        echo '<div class="text-annotation-transcription" data-language="' . esc_attr($language) . '" lang="' . esc_attr(str_replace('_', '-', $language)) . '"' . $is_hidden . '>';
+                                                        foreach ($values as $value) {
+                                                            echo wp_kses_post($value);
+                                                        }
+                                                        echo '</div>';
+                                                        $rendered_language_count++;
+                                                    }
+
+                                                    echo '</div>';
+                                                    break;
                                                 }
                                                 break;
                                             case 'Tags':

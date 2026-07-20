@@ -46,12 +46,51 @@
     gap: 3px;
 }
 
-.text-annotation-transcription {
+#annotation-table {
     --base-font: 16px;
-    font-size: var(--base-font);
 }
 
+.text-annotation-transcription {
+    font-size: var(--base-font);
+    white-space: pre-wrap;
+}
 
+.text-annotation-transcription[hidden],
+.annotation-transcription-language-control[hidden] {
+    display: none !important;
+}
+
+.annotation-transcription-toolbar,
+.annotation-transcription-font-controls,
+.annotation-transcription-language-control {
+    display: flex;
+    align-items: center;
+}
+
+.annotation-transcription-toolbar {
+    justify-content: flex-end;
+    gap: 12px;
+    width: 100%;
+}
+
+.annotation-transcription-language-control {
+    gap: 6px;
+}
+
+.annotation-transcription-language-control label {
+    margin: 0;
+    font-weight: 600;
+}
+
+#annotation-transcription-language {
+    min-width: 110px;
+    padding: 4px 28px 4px 8px;
+}
+
+.annotation-transcription-font-controls {
+    gap: 5px;
+    cursor: pointer;
+}
 
 #annotation-table p {
     font-size: 1em;

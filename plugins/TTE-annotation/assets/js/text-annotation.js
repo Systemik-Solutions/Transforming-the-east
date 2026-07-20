@@ -32,6 +32,85 @@ jQuery(document).ready(function ($) {
     let currentSearchTableResult = [];
     let currentActiveCanvasID = null;
 
+    const transcriptionLanguageControl = document.getElementById(
+        "annotation-transcription-language-control",
+    );
+    const transcriptionLanguageSelect = document.getElementById(
+        "annotation-transcription-language",
+    );
+    const transcriptionLanguageLabels = new Map(
+        transcriptionLanguageSelect
+            ? Array.from(transcriptionLanguageSelect.options).map((option) => [
+                  option.value,
+                  option.textContent.trim(),
+              ])
+            : [],
+    );
+
+    function showTranscriptionLanguage(language) {
+        document
+            .querySelectorAll(".text-annotation-transcriptions")
+            .forEach((group) => {
+                const panels = Array.from(
+                    group.querySelectorAll(".text-annotation-transcription"),
+                );
+                const selectedPanel =
+                    panels.find(
+                        (panel) => panel.dataset.language === language,
+                    ) || panels[0];
+
+                panels.forEach((panel) => {
+                    panel.hidden = panel !== selectedPanel;
+                });
+            });
+    }
+
+    function updateTranscriptionLanguageOptions(rows = allRows) {
+        if (!transcriptionLanguageSelect || !transcriptionLanguageControl) {
+            return;
+        }
+
+        const languages = [];
+        rows.forEach((row) => {
+            row
+                .querySelectorAll(".text-annotation-transcription")
+                .forEach((panel) => {
+                    const language = panel.dataset.language;
+                    if (language && !languages.includes(language)) {
+                        languages.push(language);
+                    }
+                });
+        });
+
+        const previousLanguage = transcriptionLanguageSelect.value;
+        transcriptionLanguageSelect.replaceChildren();
+
+        languages.forEach((language) => {
+            const option = document.createElement("option");
+            option.value = language;
+            option.textContent =
+                transcriptionLanguageLabels.get(language) || language;
+            transcriptionLanguageSelect.appendChild(option);
+        });
+
+        transcriptionLanguageControl.hidden = languages.length <= 1;
+
+        if (languages.length === 0) return;
+
+        const selectedLanguage = languages.includes(previousLanguage)
+            ? previousLanguage
+            : languages[0];
+        transcriptionLanguageSelect.value = selectedLanguage;
+        showTranscriptionLanguage(selectedLanguage);
+    }
+
+    if (transcriptionLanguageSelect) {
+        transcriptionLanguageSelect.addEventListener("change", function () {
+            showTranscriptionLanguage(this.value);
+        });
+        updateTranscriptionLanguageOptions(allRows);
+    }
+
     // Function to get the specific parameter from the URL
     function getQueryParam(param) {
         const queryString = window.location.search;
@@ -121,6 +200,7 @@ jQuery(document).ready(function ($) {
         onCanvasAnnotationsLoaded: (data) => {
             clearHighlightedAnnotations();
             let pageNumberText = "";
+            const visibleAnnotationRows = [];
             data.forEach((annotation) => {
                 if (Array.isArray(annotation.body)) {
                     annotation.body.forEach((body) => {
@@ -151,6 +231,7 @@ jQuery(document).ready(function ($) {
 
                 if (row) {
                     row.style.display = "";
+                    visibleAnnotationRows.push(row);
 
                     const desc = row.querySelector("input.annotation-description");
                     if (desc && desc.value) {
@@ -164,6 +245,8 @@ jQuery(document).ready(function ($) {
             } else {
                 document.getElementById("page-number").textContent = "";
             }
+
+            updateTranscriptionLanguageOptions(visibleAnnotationRows);
 
             setTimeout(() => {
                 highLightMatchedAnnotation(data.map((anno) => anno.id));
@@ -324,6 +407,7 @@ jQuery(document).ready(function ($) {
             ?.closest("tr");
         if (row) {
             row.style.display = "block";
+            updateTranscriptionLanguageOptions([row]);
         }
     }
 

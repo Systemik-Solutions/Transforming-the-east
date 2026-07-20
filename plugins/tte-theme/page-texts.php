@@ -17,11 +17,19 @@ $texts = tte_omeka_create_entity_tile_data($textEntities);
 
 
 $collectionIDs = [];
+$collectionMap = [];
 $clickUrlMap = [];
 foreach ($texts as $text) {
-    $collectionIDs[] =  $text['collectionID'];
-    $clickUrlMap[$text['collectionID']] = $text['url'];
+    $collectionID = absint($text['collectionID'] ?? 0);
+    if (!$collectionID) {
+        continue;
+    }
+
+    $collectionIDs[$collectionID] = $collectionID;
+    $collectionMap[$collectionID] = $text['title'] ?? sprintf(__('Collection %d', 'tte-theme'), $collectionID);
+    $clickUrlMap[$collectionID] = $text['url'];
 }
+$collectionIDs = array_values($collectionIDs);
 ?>
 
 <div class="page-content">
@@ -34,22 +42,23 @@ foreach ($texts as $text) {
                     Search corpus
                 </a>
             </div>
-            <?php
-
-            if (!empty($collectionIDs)) {
-                $attributes = [
-                    'selectedCollections'   => $collectionIDs,
-                    'selectedColumns'       => ["Image Set", "Image", "Page number", "Transcription", "Tags", "Title"],
-                    'columnLabelMap'        => ["Image Set" => "Division", "Page number" => "Page"],
+            <?php if (!empty($collectionIDs)) : ?>
+                <?php
+                echo glycerine_render_table_block([
+                    'selectedCollections'   => [],
+                    'selectedColumns'       => ['Image Set', 'Image', 'Page number', 'Transcription', 'Tags', 'Title'],
+                    'columnLabelMap'        => ['Image Set' => 'Division', 'Page number' => 'Page'],
                     'paging'                => 25,
                     'imageQuality'          => 600,
-                    'filterColumns'         => ["Collection", "Image Set", "Tags"],
-                    'filterColumnLabelMap'  => ["Collection" => "Book Title", "Image Set" => "Book Division"],
-                    'clickUrlMap'              => $clickUrlMap,
-                ];
-                echo glycerine_render_table_block($attributes);
-            }
-            ?>
+                    'filterColumns'         => ['Collection', 'Image Set', 'Tags'],
+                    'filterColumnLabelMap'  => ['Collection' => 'Book Title', 'Image Set' => 'Book Division'],
+                    'collectionMap'         => $collectionMap,
+                    'clickUrlMap'           => $clickUrlMap,
+                    'lazyLoad'              => true,
+                    'lazyLoadNonce'         => wp_create_nonce('tte_load_annotation_table'),
+                ]);
+                ?>
+            <?php endif; ?>
         </div>
 
 
@@ -93,18 +102,19 @@ foreach ($texts as $text) {
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Toggle glycerine tables
-        document.querySelectorAll('.openGlycerineTable').forEach((btn) => {
-            const parent = btn.closest('.glycerine-table-section');
-            if (!parent) return;
-            const table = parent.querySelector('.glycerine-table');
-            if (!table) return;
-            table.style.display = 'none';
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
+        document.querySelectorAll('.openGlycerineTable').forEach((button) => {
+            const section = button.closest('.glycerine-table-section');
+            const initialTable = section?.querySelector('.glycerine-table');
+            if (!initialTable) return;
+
+            initialTable.style.display = 'none';
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                const table = section.querySelector('.glycerine-table');
+                if (!table) return;
                 const isHidden = table.style.display === 'none';
                 table.style.display = isHidden ? 'block' : 'none';
-                btn.textContent = isHidden ? 'Hide search' : 'Search corpus';
+                button.textContent = isHidden ? 'Hide search' : 'Search corpus';
             });
         });
     });

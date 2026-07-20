@@ -142,6 +142,86 @@ function tte_theme_is_plugin_page()
     return (bool) (tte_theme_entity_template() || tte_theme_page_template());
 }
 
+/**
+ * Load the annotation table only after visitors choose one or more collections.
+ */
+function tte_theme_load_annotation_table()
+{
+    check_ajax_referer('tte_load_annotation_table', 'nonce');
+
+    $collection_ids = isset($_POST['collection_ids'])
+        ? array_values(array_unique(array_filter(array_map('absint', (array) wp_unslash($_POST['collection_ids'])))))
+        : [];
+
+    if (empty($collection_ids)) {
+        wp_send_json_error(['message' => __('Please select at least one collection.', 'tte-theme')], 400);
+    }
+
+    $raw_collection_map = isset($_POST['collection_map'])
+        ? json_decode(wp_unslash($_POST['collection_map']), true)
+        : [];
+    $raw_click_url_map = isset($_POST['click_url_map'])
+        ? json_decode(wp_unslash($_POST['click_url_map']), true)
+        : [];
+
+    $collection_map = [];
+    $click_url_map = [];
+
+    if (is_array($raw_collection_map)) {
+        foreach ($raw_collection_map as $collection_id => $collection_label) {
+            $collection_id = absint($collection_id);
+            if ($collection_id) {
+                $collection_map[$collection_id] = sanitize_text_field($collection_label);
+            }
+        }
+    }
+
+    if (is_array($raw_click_url_map)) {
+        foreach ($raw_click_url_map as $collection_id => $click_url) {
+            $collection_id = absint($collection_id);
+            if ($collection_id && isset($collection_map[$collection_id])) {
+                $click_url_map[$collection_id] = esc_url_raw($click_url);
+            }
+        }
+    }
+
+    $collection_ids = array_values(array_intersect($collection_ids, array_keys($collection_map)));
+    if (empty($collection_ids)) {
+        wp_send_json_error(['message' => __('The selected collection is invalid.', 'tte-theme')], 400);
+    }
+
+    if (!function_exists('glycerine_render_table_block')) {
+        wp_send_json_error(['message' => __('The annotation service is unavailable.', 'tte-theme')], 500);
+    }
+
+    $attributes = [
+        'selectedCollections'  => $collection_ids,
+        'selectedColumns'      => ['Image Set', 'Image', 'Page number', 'Transcription', 'Tags', 'Title'],
+        'columnLabelMap'       => ['Image Set' => 'Division', 'Page number' => 'Page'],
+        'paging'               => 25,
+        'imageQuality'         => 600,
+        'filterColumns'        => ['Collection', 'Image Set', 'Tags'],
+        'filterColumnLabelMap' => ['Collection' => 'Book Title', 'Image Set' => 'Book Division'],
+        'collectionMap'        => $collection_map,
+        'clickUrlMap'          => $click_url_map,
+        'allowAjaxRender'      => true,
+        'suppressInlineScripts' => true,
+        'lazyLoad'             => true,
+        'loadAnnotations'      => true,
+        'lazyLoadNonce'        => sanitize_text_field(wp_unslash($_POST['nonce'] ?? '')),
+    ];
+
+    $html = glycerine_render_table_block($attributes);
+
+    if (!is_string($html) || $html === '') {
+        wp_send_json_error(['message' => __('The annotations could not be loaded.', 'tte-theme')], 500);
+    }
+
+    wp_send_json_success(['html' => $html]);
+}
+add_action('wp_ajax_tte_load_annotation_table', 'tte_theme_load_annotation_table');
+add_action('wp_ajax_nopriv_tte_load_annotation_table', 'tte_theme_load_annotation_table');
+
 function tte_theme_render_content($content)
 {
     static $rendering = false;
