@@ -1,4 +1,71 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const featuredCheckbox = document.getElementById('markAsFeatured');
+
+    if (featuredCheckbox) {
+        featuredCheckbox.addEventListener('change', async function () {
+            const checkbox = this;
+            const entityID = checkbox.dataset.entityId;
+            const shouldAdd = checkbox.checked;
+
+            if (!entityID) {
+                window.alert('Missing entity id.');
+                checkbox.checked = !shouldAdd;
+                return;
+            }
+
+            if (!window.tteTheme?.ajaxUrl || !window.tteTheme?.featuredNonce) {
+                console.error('TTE featured-record configuration is unavailable.');
+                checkbox.checked = !shouldAdd;
+                return;
+            }
+
+            const formData = new URLSearchParams({
+                action: 'tte_update_featured_record',
+                nonce: window.tteTheme.featuredNonce,
+                action_type: shouldAdd ? 'add' : 'remove',
+                entity_id: entityID,
+            });
+
+            checkbox.disabled = true;
+
+            try {
+                const response = await fetch(window.tteTheme.ajaxUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    },
+                    body: formData.toString(),
+                });
+                const responseText = await response.text();
+                let payload = null;
+
+                try {
+                    payload = JSON.parse(responseText);
+                } catch (error) {
+                    // The response status and fallback message below handle invalid JSON.
+                }
+
+                if (!response.ok || payload?.success === false) {
+                    throw new Error(
+                        payload?.data?.message ||
+                        payload?.message ||
+                        'Request failed.',
+                    );
+                }
+            } catch (error) {
+                checkbox.checked = !shouldAdd;
+                console.error('Could not update the featured record.', error);
+                window.alert(
+                    error.message ||
+                    'Unexpected error occurred. Please refresh the page and try again.',
+                );
+            } finally {
+                checkbox.disabled = false;
+            }
+        });
+    }
+
     document.querySelectorAll('.tte-project .nav-tabs').forEach(function (tabList) {
         tabList.addEventListener('click', function (event) {
             const link = event.target.closest('a.nav-link[href^="#"]');
@@ -28,6 +95,10 @@ document.addEventListener('DOMContentLoaded', function () {
             link.classList.add('active');
             link.setAttribute('aria-selected', 'true');
             panel.classList.add('active', 'show');
+
+            // Preserve the Bootstrap tab event used by legacy plugin views.
+            // These tabs are now controlled here rather than by Bootstrap JS.
+            jQuery(link).trigger('shown.bs.tab');
         });
     });
 

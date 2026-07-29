@@ -7,6 +7,10 @@
  * Author:            Systemik Solutions
  */
 
+if (!defined('TTE_OMEKA_PROJECT_PLUGIN_URL')) {
+    define('TTE_OMEKA_PROJECT_PLUGIN_URL', plugin_dir_url(__FILE__));
+}
+
 require_once plugin_dir_path(__FILE__) . 'config.php';
 require_once plugin_dir_path(__FILE__) . 'src/OmekaMap.php';
 require_once plugin_dir_path(__FILE__) . 'src/OmekaSearch.php';

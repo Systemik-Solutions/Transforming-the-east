@@ -80,7 +80,7 @@ class OmekaGeoJsonController extends WP_REST_Controller
             'features' => [],
             'display' => [
                 "info" => [
-                    "logo" => get_stylesheet_directory_uri() . '/image/textus_icon_logo.png',
+                    "logo" => TTE_OMEKA_PROJECT_PLUGIN_URL . 'image/tte_icon_logo.png',
                     "content" => "<div><p>Click a pin to see its details.</p></div>"
                 ],
                 "basemapGallery" => false,

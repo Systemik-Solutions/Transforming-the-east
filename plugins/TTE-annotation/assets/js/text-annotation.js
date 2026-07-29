@@ -46,6 +46,7 @@ jQuery(document).ready(function ($) {
               ])
             : [],
     );
+    let refreshTableOfContents = function () {};
 
     function showTranscriptionLanguage(language) {
         document
@@ -63,6 +64,8 @@ jQuery(document).ready(function ($) {
                     panel.hidden = panel !== selectedPanel;
                 });
             });
+
+        refreshTableOfContents();
     }
 
     function updateTranscriptionLanguageOptions(rows = allRows) {
@@ -713,21 +716,35 @@ jQuery(document).ready(function ($) {
         $tocList.empty();
         const items = [];
         let minLevel = 6;
+        const selectedLanguage = transcriptionLanguageSelect?.value || "";
 
         allRows.forEach((row) => {
             const canvasId = row.querySelector("input.canvas-id")?.value;
             const annotationId = row.querySelector("input.annotation-id")?.value;
             if (!canvasId) return;
 
-            const headings = row.querySelectorAll(
-                "td h1, td h2, td h3, td h4, td h5, td h6"
+            let transcriptionPanels = Array.from(
+                row.querySelectorAll(".text-annotation-transcription"),
             );
-            headings.forEach((h) => {
-                const level = parseInt(h.tagName.substring(1), 10);
-                const text = h.textContent.trim();
-                if (!text) return;
-                if (level < minLevel) minLevel = level;
-                items.push({ level, text, canvasId, annotationId });
+
+            if (selectedLanguage) {
+                transcriptionPanels = transcriptionPanels.filter(
+                    (panel) => panel.dataset.language === selectedLanguage,
+                );
+            } else {
+                transcriptionPanels = transcriptionPanels.filter(
+                    (panel) => !panel.hidden,
+                );
+            }
+
+            transcriptionPanels.forEach((panel) => {
+                panel.querySelectorAll("h1, h2, h3, h4, h5, h6").forEach((h) => {
+                    const level = parseInt(h.tagName.substring(1), 10);
+                    const text = h.textContent.trim();
+                    if (!text) return;
+                    if (level < minLevel) minLevel = level;
+                    items.push({ level, text, canvasId, annotationId });
+                });
             });
         });
 
@@ -753,7 +770,16 @@ jQuery(document).ready(function ($) {
                 .css("padding-left", 0.75 + depth * 1.25 + "rem");
             $tocList.append($li);
         });
+
+        const searchQuery = String($tocSearch.val() || "").toLowerCase();
+        if (searchQuery) {
+            $tocList.find(".tte-toc-item").each(function () {
+                $(this).toggle($(this).text().toLowerCase().includes(searchQuery));
+            });
+        }
     }
+
+    refreshTableOfContents = populateTocList;
 
     $pagesToggle.on("click", function (e) {
         e.stopPropagation();

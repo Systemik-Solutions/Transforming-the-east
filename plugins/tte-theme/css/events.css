@@ -1,0 +1,38 @@
+.events-grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+
+.event-card {
+    background: #f1f1f1;
+    padding: 20px 24px;
+    border-radius: 6px;
+    transition: opacity .15s ease;
+}
+
+.event-title {
+    margin: 0 0 10px 0;
+    font-size: 18px;
+    line-height: 1.3;
+}
+
+.event-meta {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 14px;
+    opacity: .8;
+    margin-bottom: 12px;
+}
+
+.meta-sep {
+    opacity: .7;
+}
+
+ul li {
+    list-style-type: none !important;
+}

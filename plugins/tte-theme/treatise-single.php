@@ -13,16 +13,13 @@ $properties = $text->getProperties();
 
 
 $collectionID = !empty($text->getProperty('field_schema_collection')) ? $text->getProperty('field_schema_collection')[0]['@value'] : null;
-$api_key = get_option('tte_glycerine_api_key');
-$base_url = get_option('tte_glycerine_iaw_base_url');
-$iawClient = new TTEIAWClient($base_url, $api_key);
-$imageSetData = $iawClient->getImageSet($collectionID, $treatiseID);
+$imageSetData = tte_theme_get_image_set_data($collectionID, $treatiseID);
 
-$treatiseName = $imageSetData['name'];
+$treatiseName = !empty($imageSetData['name'])
+    ? $imageSetData['name']
+    : sprintf(__('Treatise %s', 'tte-theme'), $treatiseID);
 
-
-
-$publicationID = $imageSetData['publication'] ? $imageSetData['publication']['id'] : null;
+$publicationID = !empty($imageSetData['publication']['id']) ? $imageSetData['publication']['id'] : null;
 $viewUrl = $publicationID ? 'https://iaw.ardc-hdcl-sia-iaw.cloud.edu.au/publications/image-sets/' . $publicationID : null;
 
 

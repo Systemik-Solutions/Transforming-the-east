@@ -21,6 +21,113 @@ define('TTE_THEME_PLUGIN_URL', plugin_dir_url(__FILE__));
 require_once TTE_THEME_PLUGIN_DIR . 'functions.php';
 
 /**
+ * Register the Events category archive with the same content layout as a
+ * standard USYD Brand page.
+ */
+function tte_theme_register_block_templates()
+{
+    if (function_exists('register_block_type')) {
+        register_block_type('tte-theme/events-grid', [
+            'render_callback' => 'tte_theme_render_events_grid',
+        ]);
+    }
+
+    if (!function_exists('register_block_template')) {
+        return;
+    }
+
+    $template_path = TTE_THEME_PLUGIN_DIR . 'templates/category-events.html';
+    if (!is_readable($template_path)) {
+        return;
+    }
+
+    register_block_template('tte-theme//category-events', [
+        'title'       => __('Events category', 'tte-theme'),
+        'description' => __('Displays the Events category using the standard TTE page layout.', 'tte-theme'),
+        'content'     => file_get_contents($template_path),
+    ]);
+
+    $single_template_path = TTE_THEME_PLUGIN_DIR . 'templates/single-event.html';
+    if (is_readable($single_template_path)) {
+        register_block_template('tte-theme//single-event', [
+            'title'       => __('Single event', 'tte-theme'),
+            'description' => __('Displays an event title and content without the blog sidebar or advertising column.', 'tte-theme'),
+            'content'     => file_get_contents($single_template_path),
+        ]);
+    }
+}
+add_action('init', 'tte_theme_register_block_templates');
+
+/**
+ * Prefer the plugin's simplified single template for event posts only.
+ */
+function tte_theme_event_single_template_hierarchy($templates)
+{
+    if (is_singular('post') && has_category('events')) {
+        array_unshift($templates, 'single-event.php');
+    }
+
+    return $templates;
+}
+add_filter('single_template_hierarchy', 'tte_theme_event_single_template_hierarchy');
+
+/**
+ * Render event archive entries using the project's event-card markup.
+ */
+function tte_theme_render_events_grid()
+{
+    if (!is_category('events')) {
+        return '';
+    }
+
+    global $wp_query;
+
+    if (empty($wp_query->posts)) {
+        return '<p>' . esc_html__('No events were found.', 'tte-theme') . '</p>';
+    }
+
+    ob_start();
+    ?>
+    <ul class="events-grid mt-3">
+        <?php foreach ($wp_query->posts as $event_post) : ?>
+            <li class="event-card">
+                <h2 class="event-title">
+                    <a href="<?php echo esc_url(get_permalink($event_post)); ?>">
+                        <?php echo esc_html(get_the_title($event_post)); ?>
+                    </a>
+                </h2>
+
+                <div class="event-meta">
+                    <time datetime="<?php echo esc_attr(get_the_date(DATE_W3C, $event_post)); ?>">
+                        <?php echo esc_html(get_the_date('d/m/Y', $event_post)); ?>
+                    </time>
+
+                    <?php $categories = get_the_category($event_post->ID); ?>
+                    <?php if (!empty($categories)) : ?>
+                        <span class="meta-sep" aria-hidden="true">—</span>
+                        <span class="event-cats">
+                            <?php foreach ($categories as $index => $category) : ?>
+                                <?php if ($index > 0) : ?>, <?php endif; ?>
+                                <a href="<?php echo esc_url(get_category_link($category)); ?>" rel="category tag"><?php echo esc_html($category->name); ?></a>
+                            <?php endforeach; ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+    <?php
+
+    the_posts_pagination([
+        'mid_size'  => 2,
+        'prev_text' => __('Previous page', 'tte-theme'),
+        'next_text' => __('Next page', 'tte-theme'),
+    ]);
+
+    return ob_get_clean();
+}
+
+/**
  * The public entity URLs need a real WordPress page so a block theme can render
  * the normal USYDBRAND header/footer around plugin content.
  */
@@ -297,6 +404,36 @@ function tte_theme_document_title($parts)
 add_filter('document_title_parts', 'tte_theme_document_title', 20);
 
 /**
+ * Load a Glycerine image set once per request.
+ *
+ * The treatise template and its breadcrumb both need the same image-set data.
+ * Keeping the response here avoids making the API request twice.
+ */
+function tte_theme_get_image_set_data($collection_id, $image_set_id)
+{
+    static $image_sets = [];
+
+    $collection_id = absint($collection_id);
+    $image_set_id = absint($image_set_id);
+
+    if (!$collection_id || !$image_set_id || !class_exists('TTEIAWClient')) {
+        return [];
+    }
+
+    $cache_key = $collection_id . ':' . $image_set_id;
+    if (!array_key_exists($cache_key, $image_sets)) {
+        $client = new TTEIAWClient(
+            get_option('tte_glycerine_iaw_base_url'),
+            get_option('tte_glycerine_api_key')
+        );
+        $response = $client->getImageSet($collection_id, $image_set_id);
+        $image_sets[$cache_key] = is_array($response) ? $response : [];
+    }
+
+    return $image_sets[$cache_key];
+}
+
+/**
  * Replace the internal renderer-page breadcrumb with the public Omeka trail.
  */
 function tte_theme_filter_breadcrumb_items($items)
@@ -323,12 +460,22 @@ function tte_theme_filter_breadcrumb_items($items)
         $custom_items[] = ['label' => __('Texts', 'tte-theme'), 'url' => home_url('/texts/')];
 
         if (get_query_var('treatiseID')) {
+            $treatise_id = get_query_var('treatiseID');
+            $collection_values = $text ? $text->getProperty('field_schema_collection') : [];
+            $collection_id = !empty($collection_values[0]['@value'])
+                ? $collection_values[0]['@value']
+                : null;
+            $image_set_data = tte_theme_get_image_set_data($collection_id, $treatise_id);
+            $treatise_title = !empty($image_set_data['name'])
+                ? $image_set_data['name']
+                : sprintf(__('Treatise %s', 'tte-theme'), $treatise_id);
+
             $custom_items[] = [
                 'label' => $text_title,
                 'url'   => home_url('/text/' . rawurlencode($text_id) . '/'),
             ];
             $custom_items[] = [
-                'label' => sprintf(__('Treatise %s', 'tte-theme'), get_query_var('treatiseID')),
+                'label' => $treatise_title,
             ];
         } else {
             $custom_items[] = ['label' => $text_title];
@@ -368,6 +515,17 @@ function tte_theme_enqueue_assets()
 {
     $is_plugin_page = tte_theme_is_plugin_page();
     $is_home_page = is_front_page() || is_page('home');
+    $is_events_archive = is_category('events');
+
+    if ($is_events_archive) {
+        $events_style_path = TTE_THEME_PLUGIN_DIR . 'css/events.css';
+        wp_enqueue_style(
+            'tte-events-archive',
+            TTE_THEME_PLUGIN_URL . 'css/events.css',
+            [],
+            file_exists($events_style_path) ? filemtime($events_style_path) : '1.0.0'
+        );
+    }
 
     if (!$is_plugin_page && !$is_home_page) {
         return;
@@ -388,7 +546,14 @@ function tte_theme_enqueue_assets()
 
     wp_enqueue_script('jquery');
     wp_enqueue_style('tte-main-css', TTE_THEME_PLUGIN_URL . 'css/main.css', [], $version);
-    wp_enqueue_script('tte-theme-main', TTE_THEME_PLUGIN_URL . 'js/main.js', ['jquery'], $version, true);
+    $main_script_path = TTE_THEME_PLUGIN_DIR . 'js/main.js';
+    wp_enqueue_script(
+        'tte-theme-main',
+        TTE_THEME_PLUGIN_URL . 'js/main.js',
+        ['jquery'],
+        file_exists($main_script_path) ? filemtime($main_script_path) : $version,
+        true
+    );
     wp_localize_script('tte-theme-main', 'tteTheme', [
         'ajaxUrl' => admin_url('admin-ajax.php'),
         'featuredNonce' => wp_create_nonce('tte_update_featured_record'),
